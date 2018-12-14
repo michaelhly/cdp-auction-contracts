@@ -38,7 +38,7 @@ contract RegistryVars {
 
 contract AuctionHouse is Pausable, Ownable, RegistryVars{
     IMakerCDP mkr = IMakerCDP(address(0));
-    uint256 auctionCounter = 0;
+    uint256 totalListings = 0;
 
     constructor(
         address _mkrAddress
@@ -47,14 +47,14 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
     }
 
     // Registry mapping CDPs to their corresponding auctions and listings
-    mapping (bytes32 => mapping(bytes32 => ListingEntry)) public listingRegistry;
-    // Array of all auctions
-    bytes32[] auctionRegistry;
+    mapping (bytes32 => mapping(bytes32 => ListingEntry)) internal listingRegistry;
+    // Mapping of ListingEntries in order of listing history
+    mapping (uint256 => ListingEntry) internal allListings;
    
     // Mapping of AuctionIDs to BidEntryIDs
-    mapping (bytes32 => uint256[]) internal auctionToBidEntries; 
+    mapping (bytes32 => uint256[]) public auctionToBidEntries;
     // Registry mapping BidEntryIDs to their corresponding entries
-    mapping (bytes32 => mapping (bytes32 => BidEntry)) internal bidRegistry; 
+    mapping (bytes32 => mapping (bytes32 => BidEntry)) internal bidRegistry;
 
     event LogEntryListing(
         bytes32 cdp,
@@ -70,8 +70,8 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         bytes32 indexed auctionId
     );
 
-    function getListingInfo(bytes32 cdp, bytes32 auctionID)
-        public 
+    function getListing(bytes32 cdp, bytes32 auctionID)
+        public
         view
         returns (
             uint256 number,
@@ -88,13 +88,32 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         state = listingRegistry[cdp][auctionID].state;
     }
 
+    function getListingByIndex(uint256 index)
+        public
+        view
+        returns (
+            uint256 number,
+            address seller,
+            address proxy,
+            uint256 expiry,
+            AuctionState state
+        )
+    {
+        require(index <= totalListings);
+        number = allListings[index].listingNumber;
+        seller = allListings[index].seller;
+        proxy = allListings[index].proxy;
+        expiry = allListings[index].expiryBlockTimestamp;
+        state = allListings[index].state;
+    }
+
     /* List a CDP to auction */
     function listCDP(bytes32 _cdp, uint256 _expiry, uint _salt)
-        public
+        external
         whenNotPaused
     {
         bytes32 auctionID = _genAuctionId(
-            ++auctionCounter,
+            ++totalListings,
             _cdp,
             msg.sender,
             _expiry,
@@ -104,7 +123,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         require(listingRegistry[_cdp][auctionID].auctionID == bytes32(0));
 
         ListingEntry memory entry = ListingEntry(
-            auctionCounter,
+            totalListings,
             _cdp, 
             msg.sender,
             mkr.lad(_cdp), 
@@ -114,7 +133,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         );
 
         listingRegistry[_cdp][auctionID] = entry;
-        auctionRegistry.push(auctionID);
+        allListings[totalListings] = entry;
 
         emit LogEntryListing(
             _cdp,
@@ -126,7 +145,9 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
     }
 
     /* Remove a CDP from auction */
-    function removeCDP(bytes32 cdp, bytes32 auctionID) public {
+    function removeCDP(bytes32 cdp, bytes32 auctionID)
+        external
+    {
         ListingEntry memory entry = listingRegistry[cdp][auctionID];
         require(entry.state != AuctionState.Live);
         require(
@@ -156,7 +177,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         uint256 _expiry, 
         uint _salt
     )
-        internal 
+        internal
         pure
         returns(bytes32)
     {
@@ -169,17 +190,5 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
                 _salt
             )
         );
-    }
-
-    /**
-     * Get AuctionID without CDP bytes
-     */
-    function getAuctionID(uint256 index) 
-        public
-        view
-        returns (bytes32 auctionID)
-    {
-        require(index <= auctionCounter);
-        return auctionID[index];
     }
 }
