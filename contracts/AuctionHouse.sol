@@ -20,6 +20,7 @@ contract RegistryVars {
         uint256 listingNumber;
         bytes32 cdp;
         address seller;
+        address token;
         address proxy;
         bytes32 auctionID;
         uint256 expiryBlockTimestamp;
@@ -30,7 +31,6 @@ contract RegistryVars {
         bytes32 cdp;
         address buyer;
         uint256 value;
-        address token;
         bytes32 bidID;
         uint256 expiryBlockTimestamp;
     }
@@ -51,6 +51,8 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
     // Mapping of ListingEntries in order of listing history
     mapping (uint256 => ListingEntry) internal allListings;
    
+    // Mapping of AuctionIDs to max BidEntry
+    mapping (bytes32 => BidEntry) internal maxBidEntry;
     // Mapping of AuctionIDs to BidEntryIDs
     mapping (bytes32 => uint256[]) public auctionToBidEntries;
     // Registry mapping BidEntryIDs to their corresponding entries
@@ -60,6 +62,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         bytes32 cdp,
         address indexed seller,
         bytes32 indexed auctionId,
+        address indexed token,
         address proxy,
         uint256 expiry
     );
@@ -76,6 +79,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         returns (
             uint256 number,
             address seller,
+            address token,
             address proxy,
             uint256 expiry,
             AuctionState state
@@ -83,6 +87,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
     {
         number = listingRegistry[cdp][auctionID].listingNumber;
         seller = listingRegistry[cdp][auctionID].seller;
+        token = listingRegistry[cdp][auctionID].token;
         proxy = listingRegistry[cdp][auctionID].proxy;
         expiry = listingRegistry[cdp][auctionID].expiryBlockTimestamp;
         state = listingRegistry[cdp][auctionID].state;
@@ -94,6 +99,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         returns (
             uint256 number,
             address seller,
+            address token,
             address proxy,
             uint256 expiry,
             AuctionState state
@@ -102,13 +108,19 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         require(index <= totalListings);
         number = allListings[index].listingNumber;
         seller = allListings[index].seller;
+        token = allListings[index].token;
         proxy = allListings[index].proxy;
         expiry = allListings[index].expiryBlockTimestamp;
         state = allListings[index].state;
     }
 
     /* List a CDP to auction */
-    function listCDP(bytes32 _cdp, uint256 _expiry, uint _salt)
+    function listCDP(
+        bytes32 _cdp,
+        address _token,
+        uint256 _expiry,
+        uint _salt
+    )
         external
         whenNotPaused
     {
@@ -116,6 +128,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
             ++totalListings,
             _cdp,
             msg.sender,
+            _token,
             _expiry,
             _salt 
         );
@@ -126,6 +139,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
             totalListings,
             _cdp, 
             msg.sender,
+            _token,
             mkr.lad(_cdp), 
             auctionID,
             _expiry,
@@ -139,6 +153,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
             _cdp,
             msg.sender,
             auctionID,
+            _token,
             mkr.lad(_cdp),
             _expiry
         );
@@ -174,6 +189,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         uint256 _auctionCounter,
         bytes32 _cup, 
         address _seller, 
+        address _token,
         uint256 _expiry, 
         uint _salt
     )
@@ -186,6 +202,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
                 _auctionCounter,
                 _cup, 
                 _seller, 
+                _token,
                 _expiry,
                 _salt
             )
