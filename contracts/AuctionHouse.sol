@@ -6,7 +6,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IMakerCDP.sol";
 
-contract GlobalVars {
+contract RegistryVars {
     using SafeMath for uint;
     using SafeMath for uint256;
 
@@ -36,7 +36,7 @@ contract GlobalVars {
     }
 }
 
-contract AuctionHouse is Pausable, Ownable, GlobalVars{
+contract AuctionHouse is Pausable, Ownable, RegistryVars{
     IMakerCDP mkr = IMakerCDP(address(0));
     uint256 auctionCounter = 0;
 
