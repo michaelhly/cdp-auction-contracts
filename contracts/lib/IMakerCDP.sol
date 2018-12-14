@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity ^0.4.24;
 
 interface IMakerCDP {
     function open() external returns (bytes32 cup);

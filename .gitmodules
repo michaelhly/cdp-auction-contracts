@@ -1,0 +1,3 @@
+[submodule "dappsys-monolithic"]
+	path = dappsys-monolithic
+	url = https://github.com/dapphub/dappsys-monolithic
