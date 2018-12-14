@@ -1,0 +1,11 @@
+{
+  "name": "cdp-auction",
+  "version": "0.0.1",
+  "repository": "https://github.com/michaelhly/cdp-auction.git",
+  "author": "michaelhly <michaelhly@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "openzeppelin-solidity": "^2.0.0",
+    "truffle": "^4.1.14"
+  }
+}
