@@ -38,13 +38,17 @@ contract RegistryVars {
 }
 
 contract AuctionHouse is Pausable, Ownable, RegistryVars{
-    IMakerCDP mkr = IMakerCDP(address(0));
     uint256 totalListings = 0;
+    IMakerCDP mkr;
+    address feeTaker;
+    uint256 public fee;
 
     constructor(
         address _mkrAddress
     ) public {
         mkr = IMakerCDP(_mkrAddress);
+        feeTaker = msg.sender;
+        fee = 0;
     }
 
     // Mapping of auctionIds to its corresponding CDP auction
@@ -133,7 +137,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
 
         require(auctions[auctionId].state == AuctionState.Undefined);
 
-         AuctionInfo memory entry = AuctionInfo(
+        AuctionInfo memory entry = AuctionInfo(
             totalListings,
             cdp,
             msg.sender,
@@ -294,5 +298,19 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
                 _salt
             )
         );
+    }
+
+    function setFeeTaker(address newFeeTaker) 
+        public
+        onlyOwner 
+    {
+        feeTaker = newFeeTaker;
+    }
+
+    function setFee(uint256 newFee) 
+        public
+        onlyOwner 
+    {
+        fee = newFee;
     }
 }
