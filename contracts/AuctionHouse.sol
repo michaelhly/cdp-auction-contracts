@@ -188,6 +188,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         AuctionInfo memory entry = auctions[auctionId];
 
         require(entry.seller != msg.sender);
+        require(entry.state != AuctionState.Expired);
 
         if(entry.expiryBlockTimestamp > block.timestamp) {
             entry.state = AuctionState.Expired;
@@ -279,7 +280,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         uint256 _value,
         uint256 _expiry,
         uint _salt
-    )
+    ) 
         internal
         pure
         returns(bytes32)
