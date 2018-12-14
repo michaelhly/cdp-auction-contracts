@@ -11,23 +11,24 @@ contract RegistryVars {
     using SafeMath for uint256;
 
     enum AuctionState {
+        Undefined,
+        WaitingForBids,
         Live,
         Cancelled,
         Expired
     }
 
-    struct ListingEntry {
+    struct AuctionInfo {
         uint256 listingNumber;
         bytes32 cdp;
         address seller;
         address token;
         address proxy;
-        bytes32 auctionID;
         uint256 expiryBlockTimestamp;
         AuctionState state;
     }
 
-    struct BidEntry {
+    struct BidInfo {
         bytes32 cdp;
         address buyer;
         uint256 value;
@@ -46,19 +47,19 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         mkr = IMakerCDP(_mkrAddress);
     }
 
-    // Registry mapping CDPs to their corresponding auctions and listings
-    mapping (bytes32 => mapping(bytes32 => ListingEntry)) internal listingRegistry;
-    // Mapping of ListingEntries in order of listing history
-    mapping (uint256 => ListingEntry) internal allListings;
+    // Mapping of auctionIDs to its corresponding CDP auction
+    mapping (bytes32 => AuctionInfo) internal auctions;
+    // Mapping for iterative lookup of all auctions
+    mapping (uint256 => AuctionInfo) internal allAuctions;
    
-    // Mapping of AuctionIDs to max BidEntry
-    mapping (bytes32 => BidEntry) internal maxBidEntry;
-    // Mapping of AuctionIDs to BidEntryIDs
-    mapping (bytes32 => uint256[]) public auctionToBidEntries;
-    // Registry mapping BidEntryIDs to their corresponding entries
-    mapping (bytes32 => mapping (bytes32 => BidEntry)) internal bidRegistry;
+    // Mapping of auctionIDs to max bid
+    mapping (bytes32 => BidInfo) internal maxBid;
+    // Mapping of AuctionIDs to bids
+    mapping (bytes32 => uint256[]) public auctionToBids;
+    // Registry mapping bidIDs to their corresponding entries
+    mapping (bytes32 => mapping (bytes32 => BidInfo)) internal bidRegistry;
 
-    event LogEntryListing(
+    event LogAuctionEntry(
         bytes32 cdp,
         address indexed seller,
         bytes32 indexed auctionId,
@@ -67,13 +68,13 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         uint256 expiry
     );
 
-    event LogEntryRemoval(
+    event LogCancelledAuction(
         bytes32 cdp,
         address indexed seller,
         bytes32 indexed auctionId
     );
 
-    function getListing(bytes32 cdp, bytes32 auctionID)
+    function getAuction(bytes32 auctionID)
         public
         view
         returns (
@@ -85,15 +86,15 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
             AuctionState state
         )
     {
-        number = listingRegistry[cdp][auctionID].listingNumber;
-        seller = listingRegistry[cdp][auctionID].seller;
-        token = listingRegistry[cdp][auctionID].token;
-        proxy = listingRegistry[cdp][auctionID].proxy;
-        expiry = listingRegistry[cdp][auctionID].expiryBlockTimestamp;
-        state = listingRegistry[cdp][auctionID].state;
+        number = auctions[auctionID].listingNumber;
+        seller = auctions[auctionID].seller;
+        token = auctions[auctionID].token;
+        proxy = auctions[auctionID].proxy;
+        expiry = auctions[auctionID].expiryBlockTimestamp;
+        state = auctions[auctionID].state;
     }
 
-    function getListingByIndex(uint256 index)
+    function getAuctionByIndex(uint256 index)
         public
         view
         returns (
@@ -106,15 +107,15 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
         )
     {
         require(index <= totalListings);
-        number = allListings[index].listingNumber;
-        seller = allListings[index].seller;
-        token = allListings[index].token;
-        proxy = allListings[index].proxy;
-        expiry = allListings[index].expiryBlockTimestamp;
-        state = allListings[index].state;
+        number = allAuctions[index].listingNumber;
+        seller = allAuctions[index].seller;
+        token = allAuctions[index].token;
+        proxy = allAuctions[index].proxy;
+        expiry = allAuctions[index].expiryBlockTimestamp;
+        state = allAuctions[index].state;
     }
 
-    /* List a CDP to auction */
+    /* List a CDP for auction */
     function listCDP(
         bytes32 _cdp,
         address _token,
@@ -123,6 +124,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
     )
         external
         whenNotPaused
+        returns (bytes32)
     {
         bytes32 auctionID = _genAuctionId(
             ++totalListings,
@@ -133,23 +135,22 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
             _salt 
         );
 
-        require(listingRegistry[_cdp][auctionID].auctionID == bytes32(0));
+        require(auctions[auctionID].state == AuctionState.Undefined);
 
-        ListingEntry memory entry = ListingEntry(
+         AuctionInfo memory entry = AuctionInfo(
             totalListings,
             _cdp, 
             msg.sender,
             _token,
             mkr.lad(_cdp), 
-            auctionID,
             _expiry,
-            AuctionState.Live
+            AuctionState.WaitingForBids
         );
 
-        listingRegistry[_cdp][auctionID] = entry;
-        allListings[totalListings] = entry;
+        auctions[auctionID] = entry;
+        allAuctions[totalListings] = entry;
 
-        emit LogEntryListing(
+        emit LogAuctionEntry(
             _cdp,
             msg.sender,
             auctionID,
@@ -157,26 +158,28 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
             mkr.lad(_cdp),
             _expiry
         );
+
+        return auctionID;
     }
 
     /* Remove a CDP from auction */
-    function removeCDP(bytes32 cdp, bytes32 auctionID)
+    function cancelAuction(bytes32 auctionID)
         external
     {
-        ListingEntry memory entry = listingRegistry[cdp][auctionID];
+        AuctionInfo memory entry = auctions[auctionID];
         require(entry.state != AuctionState.Live);
         require(
-            msg.sender == mkr.lad(cdp) || 
-            msg.sender == listingRegistry[cdp][auctionID].seller
+            msg.sender == mkr.lad(entry.cdp) ||
+            msg.sender == entry.seller
         );
 
         entry.state = AuctionState.Cancelled;
-        listingRegistry[cdp][auctionID] = entry;
+        auctions[auctionID] = entry;
 
-        emit LogEntryRemoval(
-            cdp,
+        emit LogCancelledAuction(
+            entry.cdp,
             entry.seller,
-            entry.auctionID
+            auctionID
         );
     } 
 
