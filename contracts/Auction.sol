@@ -101,6 +101,13 @@ contract AuctionEvents is AuctionRegistry{
         address from,
         address to
     );
+
+    event LogAddedCollateral(
+        bytes32 cdp,
+        bytes32 auctionId,
+        uint256 value,
+        uint256 newAsk
+    );
 }
 
 contract Auction is Pausable, DSProxy, AuctionEvents{
@@ -363,6 +370,25 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         );
     }
 
+    /* Fund additional collateral to CDP being auctioned */
+    function fundCDP(bytes32 auctionId, uint value, uint256 newAsk) 
+        external 
+    {
+        AuctionInfo memory entry = auctions[auctionId];
+        require(entry.seller == msg.sender);
+        require(MKR.lad(entry.cdp) == address(this));
+        execute(address(MKR), _genCallDataToFundCDP(entry.cdp, value));
+        entry.ask = newAsk == 0 ? entry.ask : newAsk;
+        updateAuction(entry, entry.state);
+
+        emit LogAddedCollateral(
+            entry.cdp,
+            entry.auctionId,
+            value,
+            newAsk
+        );
+    }
+
     function concludeAuction(AuctionInfo entry, address winner, uint256 value) 
         internal
     {
@@ -485,6 +511,16 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         returns (bytes)
     {
         bytes memory data = abi.encodeWithSignature("Give(bytes32, address)", _cdp, _auction);
+        return data;
+    }
+
+    /* Helper function to generate callData to fund CDP in Auction */
+    function _genCallDataToFundCDP(bytes32 _cdp, uint _value)
+        internal
+        pure
+        returns (bytes)
+    {
+        bytes memory data = abi.encodeWithSignature("lock(bytes32, uint)", _cdp, _value);
         return data;
     }
 
