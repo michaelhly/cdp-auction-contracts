@@ -214,7 +214,8 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
 
         require(auctions[auctionId].auctionId == bytes32(0));
 
-        MKR.give(cdp, this);
+        //Transfer CDP from user to Auction
+        execute(address(MKR), _genCallDataToAcceptCDP(cdp, this));
 
         AuctionInfo memory entry = AuctionInfo(
             totalListings,
@@ -371,9 +372,8 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
 
         transferCDP(
             entry.cdp, 
-            this, 
             winner, 
-            _genCallDataForTransferCDP(entry.cdp, winner)
+            _genCallDataToAcceptCDP(entry.cdp, winner)
         );
 
         updateAuction(entry, AuctionState.Ended);
@@ -393,9 +393,8 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         updateAuction(entry, state);
         transferCDP(
             entry.cdp,
-            this,
             entry.seller,
-            _genCallDataForTransferCDP(entry.cdp, entry.seller)
+            _genCallDataToAcceptCDP(entry.cdp, entry.seller)
         );
 
         emit LogEndedAuction(
@@ -416,16 +415,15 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
 
     function transferCDP(
         bytes32 cdp, 
-        address from, 
         address to, 
         bytes data
     ) internal
     {
-        execute(address(MKR), data);
+        MKR.give(cdp, to);
 
         emit LogCDPTransfer(
             cdp,
-            from,
+            this,
             to
         );
     }
@@ -484,7 +482,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     }
 
     /* Helper function to genreate callData send to Maker for CDP transfers within the contract */
-    function _genCallDataForTransferCDP(bytes32 _cdp, address _to)
+    function _genCallDataToAcceptCDP(bytes32 _cdp, address _to)
         internal
         pure
         returns (bytes)
