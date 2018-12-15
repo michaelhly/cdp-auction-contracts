@@ -6,11 +6,8 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./lib/ds-proxy/src/proxy.sol";
 import "./lib/IMakerCDP.sol";
 
-contract RegistryVars {
-    using SafeMath for uint;
-    using SafeMath for uint256;
-
-    enum AuctionState {
+contract AuctionRegistry {
+     enum AuctionState {
         WaitingForBids,
         Live,
         Cancelled,
@@ -38,6 +35,27 @@ contract RegistryVars {
         uint256 expiryBlockTimestamp;
     }
 
+    IMakerCDP mkr;
+    uint256 totalListings = 0;
+
+    constructor(address _makerAddress) {
+        mkr = IMakerCDP(_makerAddress);
+    }
+
+    // Mapping of auctionIds to its corresponding CDP auction
+    mapping (bytes32 => AuctionInfo) internal auctions;
+    // Mapping for iterative lookup of all auctions
+    mapping (uint256 => AuctionInfo) internal allAuctions;
+
+    // Registry mapping bidIds to their corresponding entries
+    mapping (bytes32 => BidInfo) internal bidRegistry;
+    // Mapping of auctionIds to bidIds
+    mapping (bytes32 => bytes32[]) internal auctionToBids;
+    // Mapping of revoked bids
+    mapping (bytes32 => bool) public revokedBids;
+}
+
+contract AuctionEvents is AuctionRegistry{
     event LogAuctionEntry(
         bytes32 cdp,
         address indexed seller,
@@ -88,31 +106,21 @@ contract RegistryVars {
     }
 }
 
-contract AuctionHouse is Pausable, RegistryVars, DSProxy{
-    uint256 totalListings = 0;
-    IMakerCDP mkr;
+contract AuctionHouse is Pausable, DSProxy, AuctionEvents{
+    using SafeMath for uint;
+    using SafeMath for uint256;
+
     address feeTaker;
     uint256 public fee;
 
-    constructor(
-        address _mkrAddress
-    ) public {
+    constructor(address _mkrAddress) 
+        AuctionRegistry(_mkrAddress)
+        public 
+    {
         mkr = IMakerCDP(_mkrAddress);
         feeTaker = msg.sender;
         fee = 0;
     }
-
-    // Mapping of auctionIds to its corresponding CDP auction
-    mapping (bytes32 => AuctionInfo) internal auctions;
-    // Mapping for iterative lookup of all auctions
-    mapping (uint256 => AuctionInfo) internal allAuctions;
-
-    // Registry mapping bidIds to their corresponding entries
-    mapping (bytes32 => BidInfo) internal bidRegistry;
-    // Mapping of auctionIds to bidIds
-    mapping (bytes32 => bytes32[]) internal auctionToBids;
-    // Mapping of revoked bids
-    mapping (bytes32 => bool) public revokedBids;
 
     function getAuctionInfo(bytes32 auctionId)
         public
