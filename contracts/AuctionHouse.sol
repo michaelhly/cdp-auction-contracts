@@ -62,6 +62,22 @@ contract RegistryVars {
         uint256 value
     );
 
+    event LogSubmittedBid(
+        bytes32 cdp,
+        address indexed buyer,
+        uint256 value,
+        address indexed token,
+        bytes32 indexed bidId,
+        uint256 expiryBlockTimestamp
+    );
+
+    event LogRevokedBid(
+        bytes32 cdp,
+        address indexed buyer,
+        bytes32 indexed bidId,
+        uint256 value
+    );
+
     function _genCallDataToTransferCDP(bytes32 _cdp, address _to)
         internal
         pure
@@ -98,7 +114,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
     // Mapping of revoked bids
     mapping (bytes32 => bool) public revokedBids;
 
-    function getAuction(bytes32 auctionId)
+    function getAuctionInfo(bytes32 auctionId)
         public
         view
         returns (
@@ -112,13 +128,13 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
     {
         number = auctions[auctionId].listingNumber;
         seller = auctions[auctionId].seller;
-        token = auctions[auctionId].token;
-        ask = auctions[auctionId].ask;
+        token  = auctions[auctionId].token;
+        ask    = auctions[auctionId].ask;
         expiry = auctions[auctionId].expiryBlockTimestamp;
-        state = auctions[auctionId].state;
+        state  = auctions[auctionId].state;
     }
 
-    function getAuctionByIndex(uint256 index)
+    function getAuctionInfoByIndex(uint256 index)
         public
         view
         returns (
@@ -131,14 +147,41 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
             AuctionState state
         )
     {
-        require(index <= totalListings);
+        require(index <= totalListings, "Index is too large");
+
         number = allAuctions[index].listingNumber;
         seller = allAuctions[index].seller;
-        token = allAuctions[index].token;
-        ask = allAuctions[index].ask;
-        id = allAuctions[index].auctionId;
+        token  = allAuctions[index].token;
+        ask    = allAuctions[index].ask;
+        id     = allAuctions[index].auctionId;
         expiry = allAuctions[index].expiryBlockTimestamp;
-        state = allAuctions[index].state;
+        state  = allAuctions[index].state;
+    }
+
+    function getBids(bytes32 auctionId)
+        public 
+        view
+        returns (bytes32[])
+    {
+        return auctionToBids[auctionId];
+    }
+
+    function getBidInfo(bytes32 bidId) 
+        public
+        view
+        returns (
+            bytes32 cdp,
+            address buyer,
+            uint256 value,
+            address token,
+            uint256 expiry
+        )
+    {
+        cdp    = bidRegistry[bidId].cdp;
+        buyer  = bidRegistry[bidId].buyer;
+        value  = bidRegistry[bidId].value;
+        token  = bidRegistry[bidId].token;
+        expiry = bidRegistry[bidId].expiryBlockTimestamp;
     }
 
     /* List a CDP for auction */
@@ -153,7 +196,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         whenNotPaused
         returns (bytes32)
     {
-        require(msg.sender == mkr.lad(cdp), "currently no support for CDP proxies");
+        require(msg.sender == mkr.lad(cdp), "Currently no support for CDP proxies");
         require(mkr.lad(cdp) != address(this));
 
         bytes32 auctionId = _genAuctionId(
@@ -227,7 +270,6 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         endAuction(entry, state);
     }
 
-    /* Submit a bid to auction */
     function submitBid(
         bytes32 auctionId,
         uint256 value,
@@ -287,10 +329,18 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
             IERC20(entry.token).transferFrom(msg.sender, this, value);
         }
 
+        emit LogSubmittedBid(
+            entry.cdp,
+            msg.sender,
+            value,
+            entry.token,
+            bidId,
+            expiry
+        );
+
         return bidId;
     }
 
-    /* RevokeBid from auction */
     function revokeBid(bytes32 bidId)
         external
     {
@@ -299,6 +349,13 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         require(!revokedBids[bidId]);
         revokedBids[bidId] = true;
         IERC20(bid.token).transfer(msg.sender, bid.value);
+
+        emit LogRevokedBid(
+            bid.cdp,
+            msg.sender,
+            bidId,
+            bid.value
+        );
     }
 
     /**
