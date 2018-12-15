@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "./lib/ds-proxy/src/proxy.sol";
 import "./lib/IMakerCDP.sol";
 
 contract RegistryVars {
@@ -35,9 +35,18 @@ contract RegistryVars {
         bytes32 bidId;
         uint256 expiryBlockTimestamp;
     }
+
+    function _genCallDataToTransferCDP(bytes32 _cdp, address _to)
+        internal
+        pure
+        returns (bytes)
+    {
+        bytes memory data = abi.encodeWithSignature("Give(bytes32, address)", _cdp, _to);
+        return data;
+    }
 }
 
-contract AuctionHouse is Pausable, Ownable, RegistryVars{
+contract AuctionHouse is Pausable, RegistryVars, DSProxy{
     uint256 totalListings = 0;
     IMakerCDP mkr;
     address feeTaker;
@@ -55,7 +64,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
     mapping (bytes32 => AuctionInfo) internal auctions;
     // Mapping for iterative lookup of all auctions
     mapping (uint256 => AuctionInfo) internal allAuctions;
-   
+
     // Registry mapping bidIds to their corresponding entries
     mapping (bytes32 => BidInfo) internal bidRegistry;
     // Mapping of auctionIds to bidIds
@@ -135,7 +144,13 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
             salt
         );
 
-        require(auctions[auctionId].state == AuctionState.Undefined);
+        require(
+            mkr.lad(cdp) != address(this) &&
+            (auctions[auctionId].state != AuctionState.Live ||
+            auctions[auctionId].state != AuctionState.WaitingForBids)
+        );
+
+        execute(mkr, _genCallDataToTransferCDP(cdp, address(this)));
 
         AuctionInfo memory entry = AuctionInfo(
             totalListings,
@@ -170,6 +185,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
 
         entry.state = AuctionState.Cancelled;
         auctions[auctionId] = entry;
+        execute(mkr, _genCallDataToTransferCDP(entry.cdp, msg.sender));
 
         emit LogCancelledAuction(
             entry.cdp,
@@ -217,7 +233,7 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
             auctionId,
             msg.sender,
             value,
-            expiry,
+            expiry % block.number,
             salt
         );
 
@@ -302,14 +318,14 @@ contract AuctionHouse is Pausable, Ownable, RegistryVars{
 
     function setFeeTaker(address newFeeTaker) 
         public
-        onlyOwner 
+        auth
     {
         feeTaker = newFeeTaker;
     }
 
     function setFee(uint256 newFee) 
         public
-        onlyOwner 
+        auth
     {
         fee = newFee;
     }
