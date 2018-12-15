@@ -97,7 +97,6 @@ contract AuctionEvents is AuctionRegistry{
     );
 
     event CDPTransfer(
-        bytes   response,
         bytes32 cdp, 
         address from,
         address to
@@ -282,7 +281,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
             this,
             entry.seller,
             _genCallDataForTransferCDP(entry.cdp, entry.seller)
-        )
+        );
 
         AuctionState state = (block.timestamp > entry.expiryBlockTimestamp) 
                                 ? AuctionState.Expired 
@@ -428,10 +427,9 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         bytes data
     ) internal
     {
-        bytes response = execute(mkr, data);
+        execute(mkr, data);
 
         emit CDPTransfer(
-            response,
             cdp,
             from,
             to
