@@ -23,6 +23,7 @@ contract RegistryVars {
         bytes32 cdp;
         address seller;
         address token;
+        uint256 ask;
         uint256 expiryBlockTimestamp;
         AuctionState state;
     }
@@ -77,6 +78,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         address indexed seller,
         bytes32 indexed auctionId,
         address indexed token,
+        uint256 ask,
         uint256 expiry
     );
 
@@ -93,6 +95,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
             uint256 number,
             address seller,
             address token,
+            uint256 ask,
             uint256 expiry,
             AuctionState state
         )
@@ -100,6 +103,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         number = auctions[auctionId].listingNumber;
         seller = auctions[auctionId].seller;
         token = auctions[auctionId].token;
+        ask = auctions[auctionId].ask;
         expiry = auctions[auctionId].expiryBlockTimestamp;
         state = auctions[auctionId].state;
     }
@@ -111,6 +115,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
             uint256 number,
             address seller,
             address token,
+            uint256 ask,
             uint256 expiry,
             AuctionState state
         )
@@ -119,6 +124,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         number = allAuctions[index].listingNumber;
         seller = allAuctions[index].seller;
         token = allAuctions[index].token;
+        ask = allAuctions[index].ask;
         expiry = allAuctions[index].expiryBlockTimestamp;
         state = allAuctions[index].state;
     }
@@ -127,6 +133,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
     function listCDP(
         bytes32 cdp,
         address token,
+        uint256 ask,
         uint256 expiry,
         uint salt
     )
@@ -157,6 +164,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
             cdp,
             msg.sender,
             token,
+            ask,
             expiry,
             AuctionState.WaitingForBids
         );
@@ -169,6 +177,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
             msg.sender,
             auctionId,
             token,
+            ask,
             expiry
         );
 
