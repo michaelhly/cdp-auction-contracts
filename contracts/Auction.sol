@@ -227,8 +227,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
             AuctionState.Waiting
         );
 
-        auctions[auctionId] = entry;
-        allAuctions[totalListings] = entry;
+        updateAuction(entry, AuctionState.Waiting);
 
         emit LogAuctionEntry(
             cdp,
@@ -251,12 +250,6 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         require(entry.state == AuctionState.Live);
 
         if(block.timestamp > entry.expiryBlockTimestamp) {
-            transferCDP(
-                entry.cdp, 
-                this, 
-                entry.seller, 
-                _genCallDataForTransferCDP(entry.cdp, entry.seller)
-            );
             endAuction(entry, AuctionState.Expired);
             return;
         }
@@ -276,17 +269,9 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         require(entry.state == AuctionState.Waiting);
         require(msg.sender == entry.seller);
 
-        transferCDP(
-            entry.cdp,
-            this,
-            entry.seller,
-            _genCallDataForTransferCDP(entry.cdp, entry.seller)
-        );
-
-        AuctionState state = (block.timestamp > entry.expiryBlockTimestamp) 
-                                ? AuctionState.Expired 
+        AuctionState state = (block.timestamp > entry.expiryBlockTimestamp)
+                                ? AuctionState.Expired
                                 : AuctionState.Cancelled;
-
         endAuction(entry, state);
     }
 
@@ -305,7 +290,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         require(entry.seller != msg.sender);
         require(
             entry.state == AuctionState.Live ||
-            entry.state == AuctionState.Waiting    
+            entry.state == AuctionState.Waiting
         );
 
         if(entry.expiryBlockTimestamp > block.timestamp) {
@@ -314,9 +299,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         }
 
         if(entry.state == AuctionState.Waiting) {
-            entry.state = AuctionState.Live;
-            auctions[auctionId] = entry;
-            allAuctions[entry.listingNumber] = entry;
+            updateAuction(entry, AuctionState.Live);
         }
 
         bytes32 bidId = _genBidId(
@@ -392,9 +375,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
             _genCallDataForTransferCDP(entry.cdp, winner)
         );
 
-        entry.state = AuctionState.Ended;
-        auctions[entry.auctionId] = entry;
-        allAuctions[entry.listingNumber] = entry;
+        updateAuction(entry, AuctionState.Ended);
 
         emit LogConclusion(
             entry.cdp,
@@ -408,9 +389,13 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     function endAuction(AuctionInfo entry, AuctionState state)
         internal
     {
-        entry.state = state;
-        auctions[entry.auctionId] = entry;
-        allAuctions[entry.listingNumber] = entry;
+        updateAuction(entry, state);
+        transferCDP(
+            entry.cdp,
+            this,
+            entry.seller,
+            _genCallDataForTransferCDP(entry.cdp, entry.seller)
+        );
 
         emit LogEndedAuction(
             entry.auctionId,
@@ -418,6 +403,14 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
             entry.seller,
             state
         );
+    }
+
+    function updateAuction(AuctionInfo entry, AuctionState state) 
+        internal
+    {
+        entry.state = state;
+        auctions[entry.auctionId] = entry;
+        allAuctions[entry.listingNumber] = entry;
     }
 
     function transferCDP(
