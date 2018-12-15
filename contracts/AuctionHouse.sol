@@ -15,6 +15,7 @@ contract RegistryVars {
         WaitingForBids,
         Live,
         Cancelled,
+        Ended,
         Expired
     }
 
@@ -24,6 +25,7 @@ contract RegistryVars {
         address seller;
         address token;
         uint256 ask;
+        bytes32 auctionId;
         uint256 expiryBlockTimestamp;
         AuctionState state;
     }
@@ -165,6 +167,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
             msg.sender,
             token,
             ask,
+            auctionId,
             expiry,
             AuctionState.WaitingForBids
         );
@@ -192,9 +195,10 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         require(entry.state == AuctionState.WaitingForBids);
         require(msg.sender == entry.seller);
 
+        execute(mkr, _genCallDataToTransferCDP(entry.cdp, msg.sender));
         entry.state = AuctionState.Cancelled;
         auctions[auctionId] = entry;
-        execute(mkr, _genCallDataToTransferCDP(entry.cdp, msg.sender));
+        allAuctions[entry.listingNumber] = entry;
 
         emit LogCancelledAuction(
             entry.cdp,
@@ -230,7 +234,6 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
             entry.state == AuctionState.WaitingForBids ||
             entry.state == AuctionState.Live
         );
-        require(IERC20(entry.token).transferFrom(msg.sender, this, value));
 
         if(entry.state == AuctionState.WaitingForBids) {
             entry.state = AuctionState.Live;
@@ -257,6 +260,14 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
 
         bidRegistry[bidId] = bid;
         auctionToBids[auctionId].push(bidId);
+
+        if(value >= entry.ask) {
+            // Allow auction to conclude if bid >= ask
+            endAuction(entry, msg.sender, value);
+        } else {
+            // Auction tokens held in escrow until bid expires
+            IERC20(entry.token).transferFrom(msg.sender, this, value);
+        }
 
         return bidId;
     }
@@ -297,6 +308,19 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
                 _salt
             )
         );
+    }
+
+    /* Helper funciton to end auction */
+    function endAuction(AuctionInfo entry, address winner, uint256 value) 
+        internal
+    {
+        uint256 service = value.mul(fee);
+        IERC20(entry.token).transfer(feeTaker, service);
+        IERC20(entry.token).transfer(entry.seller, value.sub(service));
+        execute(mkr, _genCallDataToTransferCDP(entry.cdp, winner));
+        entry.state = AuctionState.Ended;
+        auctions[entry.auctionId] = entry;
+        allAuctions[entry.listingNumber] = entry;
     }
 
     /**
