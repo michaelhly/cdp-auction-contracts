@@ -53,6 +53,76 @@ contract AuctionRegistry {
     mapping (bytes32 => bytes32[]) internal auctionToBids;
     // Mapping of revoked bids
     mapping (bytes32 => bool) public revokedBids;
+
+    function getAuctionInfo(bytes32 auctionId)
+        public
+        view
+        returns (
+            uint256 number,
+            address seller,
+            address token,
+            uint256 ask,
+            uint256 expiry,
+            AuctionState state
+        )
+    {
+        number = auctions[auctionId].listingNumber;
+        seller = auctions[auctionId].seller;
+        token  = auctions[auctionId].token;
+        ask    = auctions[auctionId].ask;
+        expiry = auctions[auctionId].expiryBlockTimestamp;
+        state  = auctions[auctionId].state;
+    }
+
+    function getAuctionInfoByIndex(uint256 index)
+        public
+        view
+        returns (
+            uint256 number,
+            address seller,
+            address token,
+            uint256 ask,
+            bytes32 id,
+            uint256 expiry,
+            AuctionState state
+        )
+    {
+        require(index <= totalListings, "Index is too large");
+
+        number = allAuctions[index].listingNumber;
+        seller = allAuctions[index].seller;
+        token  = allAuctions[index].token;
+        ask    = allAuctions[index].ask;
+        id     = allAuctions[index].auctionId;
+        expiry = allAuctions[index].expiryBlockTimestamp;
+        state  = allAuctions[index].state;
+    }
+
+    function getBids(bytes32 auctionId)
+        public 
+        view
+        returns (bytes32[])
+    {
+        return auctionToBids[auctionId];
+    }
+
+    function getBidInfo(bytes32 bidId)
+        public
+        view
+        returns (
+            bytes32 cdp,
+            address buyer,
+            uint256 value,
+            address token,
+            uint256 expiry
+        )
+    {
+        cdp    = bidRegistry[bidId].cdp;
+        buyer  = bidRegistry[bidId].buyer;
+        value  = bidRegistry[bidId].value;
+        token  = bidRegistry[bidId].token;
+        expiry = bidRegistry[bidId].expiryBlockTimestamp;
+    }
 }
 
 contract AuctionEvents is AuctionRegistry{
@@ -124,76 +194,6 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     {
         feeTaker = msg.sender;
         fee = 0;
-    }
-
-    function getAuctionInfo(bytes32 auctionId)
-        public
-        view
-        returns (
-            uint256 number,
-            address seller,
-            address token,
-            uint256 ask,
-            uint256 expiry,
-            AuctionState state
-        )
-    {
-        number = auctions[auctionId].listingNumber;
-        seller = auctions[auctionId].seller;
-        token  = auctions[auctionId].token;
-        ask    = auctions[auctionId].ask;
-        expiry = auctions[auctionId].expiryBlockTimestamp;
-        state  = auctions[auctionId].state;
-    }
-
-    function getAuctionInfoByIndex(uint256 index)
-        public
-        view
-        returns (
-            uint256 number,
-            address seller,
-            address token,
-            uint256 ask,
-            bytes32 id,
-            uint256 expiry,
-            AuctionState state
-        )
-    {
-        require(index <= totalListings, "Index is too large");
-
-        number = allAuctions[index].listingNumber;
-        seller = allAuctions[index].seller;
-        token  = allAuctions[index].token;
-        ask    = allAuctions[index].ask;
-        id     = allAuctions[index].auctionId;
-        expiry = allAuctions[index].expiryBlockTimestamp;
-        state  = allAuctions[index].state;
-    }
-
-    function getBids(bytes32 auctionId)
-        public 
-        view
-        returns (bytes32[])
-    {
-        return auctionToBids[auctionId];
-    }
-
-    function getBidInfo(bytes32 bidId)
-        public
-        view
-        returns (
-            bytes32 cdp,
-            address buyer,
-            uint256 value,
-            address token,
-            uint256 expiry
-        )
-    {
-        cdp    = bidRegistry[bidId].cdp;
-        buyer  = bidRegistry[bidId].buyer;
-        value  = bidRegistry[bidId].value;
-        token  = bidRegistry[bidId].token;
-        expiry = bidRegistry[bidId].expiryBlockTimestamp;
     }
 
     /* List a CDP for auction */
@@ -377,6 +377,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         AuctionInfo memory entry = auctions[auctionId];
         require(entry.seller == msg.sender);
         require(MKR.lad(entry.cdp) == address(this));
+
         execute(address(MKR), _genCallDataToFundCDP(entry.cdp, value));
         entry.ask = newAsk == 0 ? entry.ask : newAsk;
         updateAuction(entry, entry.state);
