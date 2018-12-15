@@ -275,9 +275,11 @@ contract AuctionHouse is Pausable, DSProxy, AuctionEvents{
         require(msg.sender == entry.seller);
 
         execute(mkr, _genCallDataToTransferCDP(entry.cdp, msg.sender));
+
         AuctionState state = (block.timestamp > entry.expiryBlockTimestamp) 
                                 ? AuctionState.Expired 
                                 : AuctionState.Cancelled;
+                                
         endAuction(entry, state);
     }
 
