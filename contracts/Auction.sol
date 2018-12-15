@@ -372,8 +372,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
 
         transferCDP(
             entry.cdp, 
-            winner, 
-            _genCallDataToAcceptCDP(entry.cdp, winner)
+            winner
         );
 
         updateAuction(entry, AuctionState.Ended);
@@ -393,8 +392,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         updateAuction(entry, state);
         transferCDP(
             entry.cdp,
-            entry.seller,
-            _genCallDataToAcceptCDP(entry.cdp, entry.seller)
+            entry.seller
         );
 
         emit LogEndedAuction(
@@ -415,8 +413,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
 
     function transferCDP(
         bytes32 cdp, 
-        address to, 
-        bytes data
+        address to
     ) internal
     {
         MKR.give(cdp, to);
