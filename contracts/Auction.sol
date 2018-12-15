@@ -215,7 +215,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         require(auctions[auctionId].auctionId == bytes32(0));
 
         //Transfer CDP from user to Auction
-        execute(address(MKR), _genCallDataToAcceptCDP(cdp));
+        execute(address(MKR), _genCallDataToAcceptCDP(cdp, address(this)));
 
         AuctionInfo memory entry = AuctionInfo(
             totalListings,
@@ -479,12 +479,12 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     }
 
     /* Helper function to generate callData to take CDP for Auction */
-    function _genCallDataToAcceptCDP(bytes32 _cdp)
+    function _genCallDataToAcceptCDP(bytes32 _cdp, address _auction)
         internal
         pure
         returns (bytes)
     {
-        bytes memory data = abi.encodeWithSignature("Give(bytes32, address)", _cdp, address(this)_);
+        bytes memory data = abi.encodeWithSignature("Give(bytes32, address)", _cdp, _auction);
         return data;
     }
 
