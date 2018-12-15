@@ -11,7 +11,6 @@ contract RegistryVars {
     using SafeMath for uint256;
 
     enum AuctionState {
-        Undefined,
         WaitingForBids,
         Live,
         Cancelled,
@@ -38,6 +37,30 @@ contract RegistryVars {
         bytes32 bidId;
         uint256 expiryBlockTimestamp;
     }
+
+    event LogAuctionEntry(
+        bytes32 cdp,
+        address indexed seller,
+        bytes32 indexed auctionId,
+        address indexed token,
+        uint256 ask,
+        uint256 expiry
+    );
+
+    event LogEndedAuction(
+        bytes32 indexed auctionId,
+        bytes32 cdp,
+        address indexed seller,
+        AuctionState state
+    );
+
+    event LogConclusion(
+        bytes32 cdp,
+        address indexed seller,
+        address indexed buyer,
+        bytes32 indexed auctionId,
+        uint256 value
+    );
 
     function _genCallDataToTransferCDP(bytes32 _cdp, address _to)
         internal
@@ -75,21 +98,6 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
     // Mapping of revoked bids
     mapping (bytes32 => bool) public revokedBids;
 
-    event LogAuctionEntry(
-        bytes32 cdp,
-        address indexed seller,
-        bytes32 indexed auctionId,
-        address indexed token,
-        uint256 ask,
-        uint256 expiry
-    );
-
-    event LogCancelledAuction(
-        bytes32 cdp,
-        address indexed seller,
-        bytes32 indexed auctionId
-    );
-
     function getAuction(bytes32 auctionId)
         public
         view
@@ -118,6 +126,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
             address seller,
             address token,
             uint256 ask,
+            bytes32 id,
             uint256 expiry,
             AuctionState state
         )
@@ -127,6 +136,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         seller = allAuctions[index].seller;
         token = allAuctions[index].token;
         ask = allAuctions[index].ask;
+        id = allAuctions[index].auctionId;
         expiry = allAuctions[index].expiryBlockTimestamp;
         state = allAuctions[index].state;
     }
@@ -144,6 +154,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         returns (bytes32)
     {
         require(msg.sender == mkr.lad(cdp), "currently no support for CDP proxies");
+        require(mkr.lad(cdp) != address(this));
 
         bytes32 auctionId = _genAuctionId(
             ++totalListings,
@@ -153,11 +164,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
             salt
         );
 
-        require(
-            mkr.lad(cdp) != address(this) &&
-            (auctions[auctionId].state != AuctionState.Live ||
-            auctions[auctionId].state != AuctionState.WaitingForBids)
-        );
+        require(auctions[auctionId].auctionId == bytes32(0));
 
         execute(mkr, _genCallDataToTransferCDP(cdp, address(this)));
 
@@ -187,6 +194,26 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         return auctionId;
     }
 
+    /* Resolve auction by seller */
+    function resolveAuction(bytes32 auctionId, bytes32 bidId) 
+        external 
+    {
+        AuctionInfo memory entry = auctions[auctionId];
+        require(entry.seller == msg.sender);
+        require(entry.state == AuctionState.Live);
+
+        if(block.timestamp > entry.expiryBlockTimestamp) {
+            execute(mkr, _genCallDataToTransferCDP(entry.cdp, entry.seller));
+            endAuction(entry, AuctionState.Expired);
+            return;
+        }
+
+        BidInfo memory bid = bidRegistry[bidId];
+        require(bidRegistry[bidId].value != 0);
+
+        concludeAuction(entry, bid.buyer, bid.value);
+    }
+
     /* Remove a CDP from auction */
     function cancelAuction(bytes32 auctionId)
         external
@@ -196,15 +223,8 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         require(msg.sender == entry.seller);
 
         execute(mkr, _genCallDataToTransferCDP(entry.cdp, msg.sender));
-        entry.state = AuctionState.Cancelled;
-        auctions[auctionId] = entry;
-        allAuctions[entry.listingNumber] = entry;
-
-        emit LogCancelledAuction(
-            entry.cdp,
-            entry.seller,
-            auctionId
-        );
+        AuctionState state = block.timestamp > entry.expiryBlockTimestamp ? AuctionState.Expired : AuctionState.Cancelled;
+        endAuction(entry, state);
     }
 
     /* Submit a bid to auction */
@@ -221,19 +241,15 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         AuctionInfo memory entry = auctions[auctionId];
 
         require(entry.seller != msg.sender);
-        require(entry.state != AuctionState.Expired);
+        require(
+            entry.state == AuctionState.Live ||
+            entry.state == AuctionState.WaitingForBids    
+        );
 
         if(entry.expiryBlockTimestamp > block.timestamp) {
-            entry.state = AuctionState.Expired;
-            auctions[auctionId] = entry;
-            allAuctions[entry.listingNumber] = entry;
+            endAuction(entry, AuctionState.Expired);
             return bytes32(0);
         }
-
-        require(
-            entry.state == AuctionState.WaitingForBids ||
-            entry.state == AuctionState.Live
-        );
 
         if(entry.state == AuctionState.WaitingForBids) {
             entry.state = AuctionState.Live;
@@ -249,6 +265,8 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
             salt
         );
 
+        require(bidRegistry[bidId].bidId == bytes32(0));
+
         BidInfo memory bid = BidInfo(
             entry.cdp,
             msg.sender,
@@ -263,7 +281,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
 
         if(value >= entry.ask) {
             // Allow auction to conclude if bid >= ask
-            endAuction(entry, msg.sender, value);
+            concludeAuction(entry, msg.sender, value);
         } else {
             // Auction tokens held in escrow until bid expires
             IERC20(entry.token).transferFrom(msg.sender, this, value);
@@ -280,7 +298,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         require(msg.sender == bid.buyer);
         require(!revokedBids[bidId]);
         revokedBids[bidId] = true;
-        require(IERC20(bid.token).transfer(msg.sender, bid.value));
+        IERC20(bid.token).transfer(msg.sender, bid.value);
     }
 
     /**
@@ -310,8 +328,7 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         );
     }
 
-    /* Helper funciton to end auction */
-    function endAuction(AuctionInfo entry, address winner, uint256 value) 
+    function concludeAuction(AuctionInfo entry, address winner, uint256 value) 
         internal
     {
         uint256 service = value.mul(fee);
@@ -321,6 +338,29 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         entry.state = AuctionState.Ended;
         auctions[entry.auctionId] = entry;
         allAuctions[entry.listingNumber] = entry;
+
+        emit LogConclusion(
+            entry.cdp,
+            winner,
+            entry.seller,
+            entry.auctionId,
+            value
+        );
+    }
+
+    function endAuction(AuctionInfo entry, AuctionState state)
+        internal
+    {
+        entry.state = state;
+        auctions[entry.auctionId] = entry;
+        allAuctions[entry.listingNumber] = entry;
+
+        emit LogEndedAuction(
+            entry.auctionId,
+            entry.cdp,
+            entry.seller,
+            state
+        );
     }
 
     /**
