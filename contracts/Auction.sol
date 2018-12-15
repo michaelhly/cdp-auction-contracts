@@ -7,7 +7,7 @@ import "./lib/ds-proxy/src/proxy.sol";
 import "./lib/IMakerCDP.sol";
 
 contract AuctionRegistry {
-     enum AuctionState {
+    enum AuctionState {
         Waiting,
         Live,
         Cancelled,
@@ -195,7 +195,6 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         address token,
         uint256 ask,
         uint256 expiry,
-        bytes transferData,
         uint salt
     )
         external
@@ -214,7 +213,13 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         );
 
         require(auctions[auctionId].auctionId == bytes32(0));
-        transferCDP(cdp, msg.sender, this, transferData);
+
+        transferCDP(
+            cdp,
+            msg.sender,
+            this,
+            _genCallDataForTransferCDP(cdp, this)
+        );
 
         AuctionInfo memory entry = AuctionInfo(
             totalListings,
@@ -242,7 +247,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     }
 
     /* Resolve auction by seller */
-    function resolveAuction(bytes32 auctionId, bytes32 bidId) 
+    function resolveAuction(bytes32 auctionId, bytes32 bidId)
         external 
     {
         AuctionInfo memory entry = auctions[auctionId];
