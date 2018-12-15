@@ -8,7 +8,7 @@ import "./lib/IMakerCDP.sol";
 
 contract AuctionRegistry {
      enum AuctionState {
-        WaitingForBids,
+        Waiting,
         Live,
         Cancelled,
         Ended,
@@ -224,7 +224,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
             ask,
             auctionId,
             expiry,
-            AuctionState.WaitingForBids
+            AuctionState.Waiting
         );
 
         auctions[auctionId] = entry;
@@ -273,7 +273,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         external
     {
         AuctionInfo memory entry = auctions[auctionId];
-        require(entry.state == AuctionState.WaitingForBids);
+        require(entry.state == AuctionState.Waiting);
         require(msg.sender == entry.seller);
 
         transferCDP(
@@ -305,7 +305,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         require(entry.seller != msg.sender);
         require(
             entry.state == AuctionState.Live ||
-            entry.state == AuctionState.WaitingForBids    
+            entry.state == AuctionState.Waiting    
         );
 
         if(entry.expiryBlockTimestamp > block.timestamp) {
@@ -313,7 +313,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
             return bytes32(0);
         }
 
-        if(entry.state == AuctionState.WaitingForBids) {
+        if(entry.state == AuctionState.Waiting) {
             entry.state = AuctionState.Live;
             auctions[auctionId] = entry;
             allAuctions[entry.listingNumber] = entry;
