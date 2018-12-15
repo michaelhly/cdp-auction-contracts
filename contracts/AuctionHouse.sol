@@ -252,7 +252,8 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         }
 
         BidInfo memory bid = bidRegistry[bidId];
-        require(bidRegistry[bidId].value != 0);
+        require(bid.value != 0);
+        require(bid.expiryBlockTimestamp <= block.timestamp);
 
         concludeAuction(entry, bid.buyer, bid.value);
     }
@@ -266,7 +267,9 @@ contract AuctionHouse is Pausable, RegistryVars, DSProxy{
         require(msg.sender == entry.seller);
 
         execute(mkr, _genCallDataToTransferCDP(entry.cdp, msg.sender));
-        AuctionState state = block.timestamp > entry.expiryBlockTimestamp ? AuctionState.Expired : AuctionState.Cancelled;
+        AuctionState state = (block.timestamp > entry.expiryBlockTimestamp) 
+                                ? AuctionState.Expired 
+                                : AuctionState.Cancelled;
         endAuction(entry, state);
     }
 
