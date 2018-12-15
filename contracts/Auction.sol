@@ -96,7 +96,7 @@ contract AuctionEvents is AuctionRegistry{
         uint256 value
     );
 
-    event CDPTransfer(
+    event LogCDPTransfer(
         bytes32 cdp, 
         address from,
         address to
@@ -429,7 +429,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     {
         execute(mkr, data);
 
-        emit CDPTransfer(
+        emit LogCDPTransfer(
             cdp,
             from,
             to
