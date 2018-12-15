@@ -171,7 +171,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         return auctionToBids[auctionId];
     }
 
-    function getBidInfo(bytes32 bidId) 
+    function getBidInfo(bytes32 bidId)
         public
         view
         returns (
@@ -252,6 +252,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     {
         AuctionInfo memory entry = auctions[auctionId];
         require(entry.seller == msg.sender);
+        require(!revokedBids[bidId]);
         require(entry.state == AuctionState.Live);
 
         if(block.timestamp > entry.expiryBlockTimestamp) {
@@ -410,7 +411,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         );
     }
 
-    function updateAuction(AuctionInfo entry, AuctionState state) 
+    function updateAuction(AuctionInfo entry, AuctionState state)
         internal
     {
         entry.state = state;
