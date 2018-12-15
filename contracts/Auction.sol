@@ -35,11 +35,11 @@ contract AuctionRegistry {
         uint256 expiryBlockTimestamp;
     }
 
-    IMakerCDP mkr;
+    IMakerCDP MKR;
     uint256 totalListings = 0;
 
     constructor(address _makerAddress) {
-        mkr = IMakerCDP(_makerAddress);
+        MKR = IMakerCDP(_makerAddress);
     }
 
     // Mapping of auctionIds to its corresponding CDP auction
@@ -201,8 +201,8 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         whenNotPaused
         returns (bytes32)
     {
-        require(msg.sender == mkr.lad(cdp), "Currently no support for CDP proxies");
-        require(mkr.lad(cdp) != address(this));
+        require(msg.sender == MKR.lad(cdp), "Currently no support for CDP proxies");
+        require(MKR.lad(cdp) != address(this));
 
         bytes32 auctionId = _genAuctionId(
             ++totalListings,
@@ -214,12 +214,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
 
         require(auctions[auctionId].auctionId == bytes32(0));
 
-        transferCDP(
-            cdp,
-            msg.sender,
-            this,
-            _genCallDataForTransferCDP(cdp, this)
-        );
+        MKR.give(cdp, this);
 
         AuctionInfo memory entry = AuctionInfo(
             totalListings,
@@ -426,7 +421,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         bytes data
     ) internal
     {
-        execute(mkr, data);
+        execute(address(MKR), data);
 
         emit LogCDPTransfer(
             cdp,
