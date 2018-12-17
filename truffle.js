@@ -26,7 +26,8 @@ module.exports = {
       port: 8545,
       network_id: 42,
       from: "0x4e82303b75dc96c02a2eb3765d016187bd5bec14",
-      gas: 6000000
+      gas: 6000000,
+      gasPrice: 8000000000
     }
   },
   optimizer: {

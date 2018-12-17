@@ -22,7 +22,7 @@ contract AuctionRegistry {
         address token;
         uint256 ask;
         bytes32 auctionId;
-        uint256 expiryBlockTimestamp;
+        uint256 expiryBlock;
         AuctionState state;
     }
 
@@ -33,7 +33,7 @@ contract AuctionRegistry {
         address token;
         bytes32 bidId;
         bool    revoked;
-        uint256 expiryBlockTimestamp;
+        uint256 expiryBlock;
     }
 
     uint256 totalListings = 0;
@@ -66,7 +66,7 @@ contract AuctionRegistry {
         seller = auctions[auctionId].seller;
         token  = auctions[auctionId].token;
         ask    = auctions[auctionId].ask;
-        expiry = auctions[auctionId].expiryBlockTimestamp;
+        expiry = auctions[auctionId].expiryBlock;
         state  = auctions[auctionId].state;
     }
 
@@ -90,7 +90,7 @@ contract AuctionRegistry {
         token  = allAuctions[index].token;
         ask    = allAuctions[index].ask;
         id     = allAuctions[index].auctionId;
-        expiry = allAuctions[index].expiryBlockTimestamp;
+        expiry = allAuctions[index].expiryBlock;
         state  = allAuctions[index].state;
     }
 
@@ -119,7 +119,7 @@ contract AuctionRegistry {
         value   = bidRegistry[bidId].value;
         token   = bidRegistry[bidId].token;
         revoked = bidRegistry[bidId].revoked; 
-        expiry  = bidRegistry[bidId].expiryBlockTimestamp;
+        expiry  = bidRegistry[bidId].expiryBlock;
     }
 }
 
@@ -154,7 +154,7 @@ contract AuctionEvents is AuctionRegistry{
         uint256 value,
         address indexed token,
         bytes32 indexed bidId,
-        uint256 expiryBlockTimestamp
+        uint256 expiryBlock
     );
 
     event LogRevokedBid(
@@ -258,14 +258,14 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         require(!revokedBids[bidId]);
         require(entry.state == AuctionState.Live);
 
-        if(block.timestamp > entry.expiryBlockTimestamp) {
+        if(block.number > entry.expiryBlock) {
             endAuction(entry, AuctionState.Expired);
             return;
         }
 
         BidInfo memory bid = bidRegistry[bidId];
         require(bid.value != 0);
-        require(bid.expiryBlockTimestamp <= block.timestamp);
+        require(bid.expiryBlock <= block.number);
 
         concludeAuction(entry, bid.buyer, bid.value);
     }
@@ -279,7 +279,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
                 entry.state == AuctionState.Expired);
         require(msg.sender == entry.seller);
 
-        AuctionState state = (block.timestamp > entry.expiryBlockTimestamp)
+        AuctionState state = (block.number > entry.expiryBlock)
                                 ? AuctionState.Expired
                                 : AuctionState.Cancelled;
         endAuction(entry, state);
@@ -303,7 +303,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
             entry.state == AuctionState.Waiting
         );
 
-        if(entry.expiryBlockTimestamp > block.timestamp) {
+        if(entry.expiryBlock > block.number) {
             endAuction(entry, AuctionState.Expired);
             return bytes32(0);
         }
@@ -527,7 +527,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     {
         bytes memory data = abi.encodeWithSignature("lock(bytes32, uint)", _cdp, _value);
         return data;
-    }
+    } 
 
     function setFeeTaker(address newFeeTaker) 
         public
