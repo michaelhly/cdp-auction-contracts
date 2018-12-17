@@ -32,15 +32,11 @@ contract AuctionRegistry {
         uint256 value;
         address token;
         bytes32 bidId;
+        bool    revoked;
         uint256 expiryBlockTimestamp;
     }
 
-    IMakerCDP MKR;
     uint256 totalListings = 0;
-
-    constructor(address _makerAddress) {
-        MKR = IMakerCDP(_makerAddress);
-    }
 
     // Mapping of auctionIds to its corresponding CDP auction
     mapping (bytes32 => AuctionInfo) internal auctions;
@@ -114,14 +110,16 @@ contract AuctionRegistry {
             address buyer,
             uint256 value,
             address token,
+            bool    revoked,
             uint256 expiry
         )
     {
-        cdp    = bidRegistry[bidId].cdp;
-        buyer  = bidRegistry[bidId].buyer;
-        value  = bidRegistry[bidId].value;
-        token  = bidRegistry[bidId].token;
-        expiry = bidRegistry[bidId].expiryBlockTimestamp;
+        cdp     = bidRegistry[bidId].cdp;
+        buyer   = bidRegistry[bidId].buyer;
+        value   = bidRegistry[bidId].value;
+        token   = bidRegistry[bidId].token;
+        revoked = bidRegistry[bidId].revoked; 
+        expiry  = bidRegistry[bidId].expiryBlockTimestamp;
     }
 }
 
@@ -187,11 +185,13 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     address feeTaker;
     uint256 public fee;
 
+    IMakerCDP MKR;
+    
     constructor(address _mkrAddr, address _cacheAddr) 
-        AuctionRegistry(_mkrAddr)
         DSProxy(_cacheAddr)
         public 
     {
+        MKR = IMakerCDP(_mkrAddr);
         feeTaker = msg.sender;
         fee = 0;
     }
@@ -275,7 +275,8 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         external
     {
         AuctionInfo memory entry = auctions[auctionId];
-        require(entry.state == AuctionState.Waiting);
+        require(entry.state == AuctionState.Waiting ||
+                entry.state == AuctionState.Expired);
         require(msg.sender == entry.seller);
 
         AuctionState state = (block.timestamp > entry.expiryBlockTimestamp)
@@ -327,6 +328,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
             value,
             entry.token,
             bidId,
+            false,
             expiry
         );
 
@@ -360,6 +362,8 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         require(msg.sender == bid.buyer);
         require(!revokedBids[bidId]);
         revokedBids[bidId] = true;
+        bid.revoked = true;
+        bidRegistry[bidId] = bid;
         IERC20(bid.token).transfer(msg.sender, bid.value);
 
         emit LogRevokedBid(
