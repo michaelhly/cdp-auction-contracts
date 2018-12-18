@@ -201,7 +201,11 @@ contract Auction is Pausable, Ownable, AuctionEvents{
         fee = 0;
     }
 
-    /* List a CDP for auction */
+    /**
+     * List a CDP for auction
+     * Note: Auction must be proved by user's profile
+     * proxy in order to list CDP to auction
+     */
     function listCDP(
         bytes32 cdp,
         address proxy,
