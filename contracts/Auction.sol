@@ -1,10 +1,11 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./lib/ds-proxy/src/proxy.sol";
-import "./lib/IMakerCDP.sol";
+import "./lib/TubInterface.sol";
 
 contract AuctionRegistry {
     enum AuctionState {
@@ -18,6 +19,7 @@ contract AuctionRegistry {
     struct AuctionInfo {
         uint256 listingNumber;
         bytes32 cdp;
+        address proxy;
         address seller;
         address token;
         uint256 ask;
@@ -55,6 +57,8 @@ contract AuctionRegistry {
         view
         returns (
             uint256 number,
+            bytes32 cdp,
+            address proxy,
             address seller,
             address token,
             uint256 ask,
@@ -63,6 +67,8 @@ contract AuctionRegistry {
         )
     {
         number = auctions[auctionId].listingNumber;
+        cdp    = auctions[auctionId].cdp;
+        proxy  = auctions[auctionId].proxy;
         seller = auctions[auctionId].seller;
         token  = auctions[auctionId].token;
         ask    = auctions[auctionId].ask;
@@ -74,22 +80,22 @@ contract AuctionRegistry {
         public
         view
         returns (
-            uint256 number,
+            bytes32 id,
+            bytes32 cdp,
+            address proxy,
             address seller,
             address token,
             uint256 ask,
-            bytes32 id,
             uint256 expiry,
             AuctionState state
         )
     {
-        require(index <= totalListings, "Index is too large");
-
-        number = allAuctions[index].listingNumber;
+        id     = allAuctions[index].auctionId;
+        cdp    = allAuctions[index].cdp;
+        proxy  = allAuctions[index].proxy;
         seller = allAuctions[index].seller;
         token  = allAuctions[index].token;
         ask    = allAuctions[index].ask;
-        id     = allAuctions[index].auctionId;
         expiry = allAuctions[index].expiryBlock;
         state  = allAuctions[index].state;
     }
@@ -178,20 +184,19 @@ contract AuctionEvents is AuctionRegistry{
     );
 }
 
-contract Auction is Pausable, DSProxy, AuctionEvents{
+contract Auction is Pausable, Ownable, AuctionEvents{
     using SafeMath for uint;
     using SafeMath for uint256;
 
     address feeTaker;
     uint256 public fee;
 
-    IMakerCDP MKR;
+    TubInterface saiTub;
     
-    constructor(address _mkrAddr, address _cacheAddr) 
-        DSProxy(_cacheAddr)
+    constructor(address _mkrAddr)
         public 
     {
-        MKR = IMakerCDP(_mkrAddr);
+        saiTub = TubInterface(_mkrAddr);
         feeTaker = msg.sender;
         fee = 0;
     }
@@ -199,6 +204,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     /* List a CDP for auction */
     function listCDP(
         bytes32 cdp,
+        address proxy,
         address token,
         uint256 ask,
         uint256 expiry,
@@ -208,8 +214,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         whenNotPaused
         returns (bytes32)
     {
-        require(msg.sender == MKR.lad(cdp), "Currently no support for CDP proxies");
-        require(MKR.lad(cdp) != address(this));
+        require(saiTub.lad(cdp) != address(this));
 
         bytes32 auctionId = _genAuctionId(
             ++totalListings,
@@ -222,11 +227,15 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         require(auctions[auctionId].auctionId == bytes32(0));
 
         //Transfer CDP from user to Auction
-        MKR.give(cdp, address(this));
+        DSProxy(proxy).execute(
+            address(saiTub),
+            _genCallDataToAcceptCDP(cdp, address(this))
+        );
 
         AuctionInfo memory entry = AuctionInfo(
             totalListings,
             cdp,
+            proxy,
             msg.sender,
             token,
             ask,
@@ -380,10 +389,10 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     {
         AuctionInfo memory entry = auctions[auctionId];
         require(entry.seller == msg.sender);
-        require(MKR.lad(entry.cdp) == address(this));
+        require(saiTub.lad(entry.cdp) == address(this));
 
-        execute(address(MKR), _genCallDataToFundCDP(entry.cdp, value));
-        entry.ask = newAsk == 0 ? entry.ask : newAsk;
+        saiTub.lock(entry.cdp, value);
+        entry.ask = newAsk ==0 ? entry.ask : newAsk;
         updateAuction(entry, entry.state);
 
         emit LogAddedCollateral(
@@ -423,7 +432,7 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
         updateAuction(entry, state);
         transferCDP(
             entry.cdp,
-            entry.seller
+            entry.proxy
         );
 
         emit LogEndedAuction(
@@ -443,11 +452,10 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     }
 
     function transferCDP(
-        bytes32 cdp, 
-        address to
+        bytes32 cdp, address to
     ) internal
     {
-        execute(address(MKR), _genCallDataToTransferCDP(cdp, to));
+        saiTub.give(cdp, to);
 
         emit LogCDPTransfer(
             cdp,
@@ -510,35 +518,25 @@ contract Auction is Pausable, DSProxy, AuctionEvents{
     }
 
     /* Helper function to generate callData to take CDP for Auction */
-    function _genCallDataToTransferCDP(bytes32 _cdp, address _to)
+    function _genCallDataToAcceptCDP(bytes32 _cdp, address _auction)
         internal
         pure
         returns (bytes)
     {
-        bytes memory data = abi.encodeWithSignature("give(bytes32,address)", _cdp, _to);
+        bytes memory data = abi.encodeWithSignature("give(bytes32,address)", _cdp, _auction);
         return data;
     }
 
-    /* Helper function to generate callData to fund CDP in Auction */
-    function _genCallDataToFundCDP(bytes32 _cdp, uint _value)
-        internal
-        pure
-        returns (bytes)
-    {
-        bytes memory data = abi.encodeWithSignature("lock(bytes32,uint)", _cdp, _value);
-        return data;
-    } 
-
     function setFeeTaker(address newFeeTaker) 
         public
-        auth
+        onlyOwner
     {
         feeTaker = newFeeTaker;
     }
 
     function setFee(uint256 newFee) 
         public
-        auth
+        onlyOwner
     {
         fee = newFee;
     }

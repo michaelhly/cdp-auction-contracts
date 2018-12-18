@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-interface IMakerCDP {
+interface TubInterface { 
     function open() external returns (bytes32 cup);
     function join(uint wad) external; // Join PETH
     function exit(uint wad) external; // Exit PETH
