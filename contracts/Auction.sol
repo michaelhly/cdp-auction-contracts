@@ -5,6 +5,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./lib/ds-proxy/src/proxy.sol";
+import "./lib/ds-auth/src/auth.sol";
 import "./lib/TubInterface.sol";
 
 contract AuctionRegistry {
@@ -184,7 +185,7 @@ contract AuctionEvents is AuctionRegistry{
     );
 }
 
-contract Auction is Pausable, Ownable, AuctionEvents{
+contract Auction is Pausable, DSAuth, AuctionEvents{
     using SafeMath for uint;
     using SafeMath for uint256;
 
@@ -203,7 +204,7 @@ contract Auction is Pausable, Ownable, AuctionEvents{
 
     /**
      * List a CDP for auction
-     * Note: Auction must be proved by user's profile
+     * Note: Auction must be approved by user's profile
      * proxy in order to list CDP to auction
      */
     function listCDP(
@@ -407,6 +408,13 @@ contract Auction is Pausable, Ownable, AuctionEvents{
         );
     }
 
+    function revokeProxyAuthority(address proxy)
+        public 
+    {
+        require(DSProxy(proxy).owner == msg.sender);
+        DSProxy(proxy).setAuthority(address(0));
+    }
+
     function concludeAuction(AuctionInfo entry, address winner, uint256 value) 
         internal
     {
@@ -533,14 +541,14 @@ contract Auction is Pausable, Ownable, AuctionEvents{
 
     function setFeeTaker(address newFeeTaker) 
         public
-        onlyOwner
+        auth
     {
         feeTaker = newFeeTaker;
     }
 
     function setFee(uint256 newFee) 
         public
-        onlyOwner
+        auth
     {
         fee = newFee;
     }
