@@ -5,7 +5,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./lib/ds-proxy/src/proxy.sol";
-import "./lib/ds-auth/src/auth.sol";
+import "./lib/ds-proxy/lib/ds-auth/auth.sol";
 import "./lib/TubInterface.sol";
 
 contract AuctionRegistry {
@@ -408,11 +408,15 @@ contract Auction is Pausable, DSAuth, AuctionEvents{
         );
     }
 
-    function revokeProxyAuthority(address proxy)
+    /*
+     * Revoke authority form a given proxy contract
+     */
+    function revokeAuthority(address proxy)
         public 
     {
-        require(DSProxy(proxy).owner == msg.sender);
-        DSProxy(proxy).setAuthority(address(0));
+        address owner = DSProxy(proxy).owner();
+        require(owner == msg.sender);
+        DSProxy(proxy).setAuthority(DSAuthority(0));
     }
 
     function concludeAuction(AuctionInfo entry, address winner, uint256 value) 
