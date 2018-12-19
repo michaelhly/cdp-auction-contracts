@@ -2,5 +2,5 @@
 	path = contracts/lib/ds-proxy
 	url = https://github.com/dapphub/ds-proxy.git
 [submodule "contracts/lib/ds-auth"]
-	path = contracts/lib/ds-auth
-	url = https://github.com/dapphub/ds-auth
+	path = contracts/lib/dappsys-monolithic
+	url = https://github.com/dapphub/dappsys-monolithic.git 

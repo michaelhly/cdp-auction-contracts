@@ -1,12 +1,9 @@
 pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./lib/ds-proxy/src/proxy.sol";
-import "./lib/ds-proxy/lib/ds-auth/auth.sol";
-import "./lib/TubInterface.sol";
+import "./lib/ITub.sol";
 
 contract AuctionRegistry {
     enum AuctionState {
@@ -20,7 +17,6 @@ contract AuctionRegistry {
     struct AuctionInfo {
         uint256 listingNumber;
         bytes32 cdp;
-        address proxy;
         address seller;
         address token;
         uint256 ask;
@@ -59,7 +55,6 @@ contract AuctionRegistry {
         returns (
             uint256 number,
             bytes32 cdp,
-            address proxy,
             address seller,
             address token,
             uint256 ask,
@@ -69,7 +64,6 @@ contract AuctionRegistry {
     {
         number = auctions[auctionId].listingNumber;
         cdp    = auctions[auctionId].cdp;
-        proxy  = auctions[auctionId].proxy;
         seller = auctions[auctionId].seller;
         token  = auctions[auctionId].token;
         ask    = auctions[auctionId].ask;
@@ -83,7 +77,6 @@ contract AuctionRegistry {
         returns (
             bytes32 id,
             bytes32 cdp,
-            address proxy,
             address seller,
             address token,
             uint256 ask,
@@ -93,7 +86,6 @@ contract AuctionRegistry {
     {
         id     = allAuctions[index].auctionId;
         cdp    = allAuctions[index].cdp;
-        proxy  = allAuctions[index].proxy;
         seller = allAuctions[index].seller;
         token  = allAuctions[index].token;
         ask    = allAuctions[index].ask;
@@ -185,31 +177,26 @@ contract AuctionEvents is AuctionRegistry{
     );
 }
 
-contract Auction is Pausable, DSAuth, AuctionEvents{
-    using SafeMath for uint;
+contract Auction is Pausable, AuctionEvents{
     using SafeMath for uint256;
 
-    address feeTaker;
+    address private feeTaker;
     uint256 public fee;
-
-    TubInterface saiTub;
+    ITub public tub;
     
-    constructor(address _mkrAddr)
+    constructor(address _tub)
         public 
     {
-        saiTub = TubInterface(_mkrAddr);
+        tub = ITub(_tub);
         feeTaker = msg.sender;
         fee = 0;
     }
 
     /**
      * List a CDP for auction
-     * Note: Auction must be approved by user's profile
-     * proxy in order to list CDP to auction
      */
     function listCDP(
         bytes32 cdp,
-        address proxy,
         address token,
         uint256 ask,
         uint256 expiry,
@@ -219,7 +206,7 @@ contract Auction is Pausable, DSAuth, AuctionEvents{
         whenNotPaused
         returns (bytes32)
     {
-        require(saiTub.lad(cdp) != address(this));
+        require(tub.lad(cdp) != address(this));
 
         bytes32 auctionId = _genAuctionId(
             ++totalListings,
@@ -231,16 +218,9 @@ contract Auction is Pausable, DSAuth, AuctionEvents{
 
         require(auctions[auctionId].auctionId == bytes32(0));
 
-        //Transfer CDP from user to Auction
-        DSProxy(proxy).execute(
-            address(saiTub),
-            _genCallDataToAcceptCDP(cdp, address(this))
-        );
-
         AuctionInfo memory entry = AuctionInfo(
             totalListings,
             cdp,
-            proxy,
             msg.sender,
             token,
             ask,
@@ -268,6 +248,7 @@ contract Auction is Pausable, DSAuth, AuctionEvents{
         external 
     {
         AuctionInfo memory entry = auctions[auctionId];
+        require(tub.lad(entry.cdp) == address(this));
         require(entry.seller == msg.sender);
         require(!revokedBids[bidId]);
         require(entry.state == AuctionState.Live);
@@ -289,6 +270,7 @@ contract Auction is Pausable, DSAuth, AuctionEvents{
         external
     {
         AuctionInfo memory entry = auctions[auctionId];
+        require(tub.lad(entry.cdp) == address(this));
         require(entry.state == AuctionState.Waiting ||
                 entry.state == AuctionState.Expired);
         require(msg.sender == entry.seller);
@@ -310,7 +292,7 @@ contract Auction is Pausable, DSAuth, AuctionEvents{
         returns (bytes32)
     {
         AuctionInfo memory entry = auctions[auctionId];
-
+        require(tub.lad(entry.cdp) == address(this));
         require(entry.seller != msg.sender);
         require(
             entry.state == AuctionState.Live ||
@@ -393,10 +375,11 @@ contract Auction is Pausable, DSAuth, AuctionEvents{
         external 
     {
         AuctionInfo memory entry = auctions[auctionId];
+        require(tub.lad(entry.cdp) == address(this));
         require(entry.seller == msg.sender);
-        require(saiTub.lad(entry.cdp) == address(this));
+        require(tub.lad(entry.cdp) == address(this));
 
-        saiTub.lock(entry.cdp, value);
+        tub.lock(entry.cdp, value);
         entry.ask = newAsk ==0 ? entry.ask : newAsk;
         updateAuction(entry, entry.state);
 
@@ -406,17 +389,6 @@ contract Auction is Pausable, DSAuth, AuctionEvents{
             value,
             newAsk
         );
-    }
-
-    /*
-     * Revoke authority form a given proxy contract
-     */
-    function revokeAuthority(address proxy)
-        public 
-    {
-        address owner = DSProxy(proxy).owner();
-        require(owner == msg.sender);
-        DSProxy(proxy).setAuthority(DSAuthority(0));
     }
 
     function concludeAuction(AuctionInfo entry, address winner, uint256 value) 
@@ -448,7 +420,7 @@ contract Auction is Pausable, DSAuth, AuctionEvents{
         updateAuction(entry, state);
         transferCDP(
             entry.cdp,
-            entry.proxy
+            entry.seller
         );
 
         emit LogEndedAuction(
@@ -471,11 +443,11 @@ contract Auction is Pausable, DSAuth, AuctionEvents{
         bytes32 cdp, address to
     ) internal
     {
-        saiTub.give(cdp, to);
+        tub.give(cdp, to);
 
         emit LogCDPTransfer(
             cdp,
-            this,
+            address(this),
             to
         );
     }
@@ -533,26 +505,16 @@ contract Auction is Pausable, DSAuth, AuctionEvents{
         );
     }
 
-    /* Helper function to generate callData to take CDP for Auction */
-    function _genCallDataToAcceptCDP(bytes32 _cdp, address _auction)
-        internal
-        pure
-        returns (bytes)
-    {
-        bytes memory data = abi.encodeWithSignature("give(bytes32,address)", _cdp, _auction);
-        return data;
-    }
-
     function setFeeTaker(address newFeeTaker) 
         public
-        auth
+        onlyPauser
     {
         feeTaker = newFeeTaker;
     }
 
     function setFee(uint256 newFee) 
         public
-        auth
+        onlyPauser
     {
         fee = newFee;
     }
