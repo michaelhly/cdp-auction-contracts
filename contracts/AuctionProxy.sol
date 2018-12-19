@@ -28,7 +28,7 @@ contract AuctionProxy {
             expiry,
             salt
         );
-        ITub(address(auction.tub())).give(cdp, address(auction));
+        tub.give(cdp, address(auction));
         return auctionId;
     }
 }
