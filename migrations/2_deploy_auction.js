@@ -9,7 +9,7 @@ module.exports = function(deployer, network) {
 
   if (network == "kovan") {
     return deployer.deploy(Auction, KovanSaiTub).then(async () => {
-      await deployer.deploy(AuctionProxy, Auction.address, KovanSaiTub);
+      await deployer.deploy(AuctionProxy, Auction.address);
     });
   } else {
     deployer.deploy(DSProxyFactory);

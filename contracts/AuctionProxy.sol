@@ -1,19 +1,20 @@
 pragma solidity ^0.4.24;
 
 import "./Auction.sol";
-import "./sai/SaiProxy.sol";
+import "./lib/ITub.sol";
 
-contract AuctionProxy is SaiProxy{
+contract AuctionProxy {
     Auction public auction;
+    ITub public tub;
 
-    constructor(address _auction, address _tub) 
+    constructor(address _auction) 
         public
     {
         auction = Auction(_auction);
+        tub = ITub(address(auction.tub()));
     }
 
     function createAuction(
-        address tub,
         bytes32 cdp,
         address token,
         uint256 ask,
@@ -27,7 +28,7 @@ contract AuctionProxy is SaiProxy{
             expiry,
             salt
         );
-        TubInterface(tub).give(cdp, address(auction));
+        ITub(address(auction.tub())).give(cdp, address(auction));
         return auctionId;
     }
 }

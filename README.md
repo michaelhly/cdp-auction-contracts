@@ -1,6 +1,6 @@
 ```
 Kovan
 ----------
-Auction: 0x4da569940e9fb7b3af04d22efba8f9040bccd0fc
-AuctionProxy: 0xd3e81234f57b379a0d9c583399be5809a2f1cbab
+Auction: 0xa436b81b9cbbe043982f6578b38fa7b3adc1c028
+AuctionProxy: 0x570c865040137207c88c8143ec15ea5088824440
 ```
