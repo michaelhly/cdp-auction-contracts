@@ -1,890 +1,888 @@
-{
-  "abi": [
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "owner_",
-          "type": "address"
-        }
-      ],
-      "name": "setOwner",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "name": "index",
-          "type": "uint256"
-        }
-      ],
-      "name": "getAuctionInfoByIndex",
-      "outputs": [
-        {
-          "name": "number",
-          "type": "uint256"
-        },
-        {
-          "name": "seller",
-          "type": "address"
-        },
-        {
-          "name": "token",
-          "type": "address"
-        },
-        {
-          "name": "ask",
-          "type": "uint256"
-        },
-        {
-          "name": "id",
-          "type": "bytes32"
-        },
-        {
-          "name": "expiry",
-          "type": "uint256"
-        },
-        {
-          "name": "state",
-          "type": "uint8"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "_target",
-          "type": "address"
-        },
-        {
-          "name": "_data",
-          "type": "bytes"
-        }
-      ],
-      "name": "execute",
-      "outputs": [
-        {
-          "name": "response",
-          "type": "bytes"
-        }
-      ],
-      "payable": true,
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "_code",
-          "type": "bytes"
-        },
-        {
-          "name": "_data",
-          "type": "bytes"
-        }
-      ],
-      "name": "execute",
-      "outputs": [
-        {
-          "name": "target",
-          "type": "address"
-        },
-        {
-          "name": "response",
-          "type": "bytes"
-        }
-      ],
-      "payable": true,
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [],
-      "name": "unpause",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "isPauser",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "paused",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "cache",
-      "outputs": [
-        {
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "name": "bidId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "getBidInfo",
-      "outputs": [
-        {
-          "name": "cdp",
-          "type": "bytes32"
-        },
-        {
-          "name": "buyer",
-          "type": "address"
-        },
-        {
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "name": "token",
-          "type": "address"
-        },
-        {
-          "name": "revoked",
-          "type": "bool"
-        },
-        {
-          "name": "expiry",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [],
-      "name": "renouncePauser",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "authority_",
-          "type": "address"
-        }
-      ],
-      "name": "setAuthority",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "addPauser",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [],
-      "name": "pause",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "owner",
-      "outputs": [
-        {
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "_cacheAddr",
-          "type": "address"
-        }
-      ],
-      "name": "setCache",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "name": "auctionId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "getBids",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bytes32[]"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "name": "",
-          "type": "bytes32"
-        }
-      ],
-      "name": "revokedBids",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "authority",
-      "outputs": [
-        {
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
-          "name": "auctionId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "getAuctionInfo",
-      "outputs": [
-        {
-          "name": "number",
-          "type": "uint256"
-        },
-        {
-          "name": "seller",
-          "type": "address"
-        },
-        {
-          "name": "token",
-          "type": "address"
-        },
-        {
-          "name": "ask",
-          "type": "uint256"
-        },
-        {
-          "name": "expiry",
-          "type": "uint256"
-        },
-        {
-          "name": "state",
-          "type": "uint8"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "fee",
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "name": "_mkrAddr",
-          "type": "address"
-        },
-        {
-          "name": "_cacheAddr",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "constructor"
-    },
-    {
-      "payable": true,
-      "stateMutability": "payable",
-      "type": "fallback"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "name": "cdp",
-          "type": "bytes32"
-        },
-        {
-          "indexed": true,
-          "name": "seller",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "name": "auctionId",
-          "type": "bytes32"
-        },
-        {
-          "indexed": true,
-          "name": "token",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "name": "ask",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "name": "expiry",
-          "type": "uint256"
-        }
-      ],
-      "name": "LogAuctionEntry",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "name": "auctionId",
-          "type": "bytes32"
-        },
-        {
-          "indexed": false,
-          "name": "cdp",
-          "type": "bytes32"
-        },
-        {
-          "indexed": true,
-          "name": "seller",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "name": "state",
-          "type": "uint8"
-        }
-      ],
-      "name": "LogEndedAuction",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "name": "cdp",
-          "type": "bytes32"
-        },
-        {
-          "indexed": true,
-          "name": "seller",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "name": "buyer",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "name": "auctionId",
-          "type": "bytes32"
-        },
-        {
-          "indexed": false,
-          "name": "value",
-          "type": "uint256"
-        }
-      ],
-      "name": "LogConclusion",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "name": "cdp",
-          "type": "bytes32"
-        },
-        {
-          "indexed": true,
-          "name": "buyer",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "name": "token",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "name": "bidId",
-          "type": "bytes32"
-        },
-        {
-          "indexed": false,
-          "name": "expiryBlockTimestamp",
-          "type": "uint256"
-        }
-      ],
-      "name": "LogSubmittedBid",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "name": "cdp",
-          "type": "bytes32"
-        },
-        {
-          "indexed": true,
-          "name": "buyer",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "name": "bidId",
-          "type": "bytes32"
-        },
-        {
-          "indexed": false,
-          "name": "value",
-          "type": "uint256"
-        }
-      ],
-      "name": "LogRevokedBid",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "name": "cdp",
-          "type": "bytes32"
-        },
-        {
-          "indexed": false,
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "name": "to",
-          "type": "address"
-        }
-      ],
-      "name": "LogCDPTransfer",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "name": "cdp",
-          "type": "bytes32"
-        },
-        {
-          "indexed": false,
-          "name": "auctionId",
-          "type": "bytes32"
-        },
-        {
-          "indexed": false,
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "name": "newAsk",
-          "type": "uint256"
-        }
-      ],
-      "name": "LogAddedCollateral",
-      "type": "event"
-    },
-    {
-      "anonymous": true,
-      "inputs": [
-        {
-          "indexed": true,
-          "name": "sig",
-          "type": "bytes4"
-        },
-        {
-          "indexed": true,
-          "name": "guy",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "name": "foo",
-          "type": "bytes32"
-        },
-        {
-          "indexed": true,
-          "name": "bar",
-          "type": "bytes32"
-        },
-        {
-          "indexed": false,
-          "name": "wad",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "name": "fax",
-          "type": "bytes"
-        }
-      ],
-      "name": "LogNote",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "name": "authority",
-          "type": "address"
-        }
-      ],
-      "name": "LogSetAuthority",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "name": "owner",
-          "type": "address"
-        }
-      ],
-      "name": "LogSetOwner",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "Paused",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "Unpaused",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "PauserAdded",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "PauserRemoved",
-      "type": "event"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "cdp",
-          "type": "bytes32"
-        },
-        {
-          "name": "token",
-          "type": "address"
-        },
-        {
-          "name": "ask",
-          "type": "uint256"
-        },
-        {
-          "name": "expiry",
-          "type": "uint256"
-        },
-        {
-          "name": "salt",
-          "type": "uint256"
-        }
-      ],
-      "name": "listCDP",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bytes32"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "auctionId",
-          "type": "bytes32"
-        },
-        {
-          "name": "bidId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "resolveAuction",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "auctionId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "cancelAuction",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "auctionId",
-          "type": "bytes32"
-        },
-        {
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "name": "expiry",
-          "type": "uint256"
-        },
-        {
-          "name": "salt",
-          "type": "uint256"
-        }
-      ],
-      "name": "submitBid",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bytes32"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "bidId",
-          "type": "bytes32"
-        }
-      ],
-      "name": "revokeBid",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "auctionId",
-          "type": "bytes32"
-        },
-        {
-          "name": "value",
-          "type": "uint256"
-        },
-        {
-          "name": "newAsk",
-          "type": "uint256"
-        }
-      ],
-      "name": "fundCDP",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "newFeeTaker",
-          "type": "address"
-        }
-      ],
-      "name": "setFeeTaker",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "newFee",
-          "type": "uint256"
-        }
-      ],
-      "name": "setFee",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
-  ]
-}
+[
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "owner_",
+        "type": "address"
+      }
+    ],
+    "name": "setOwner",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "getAuctionInfoByIndex",
+    "outputs": [
+      {
+        "name": "number",
+        "type": "uint256"
+      },
+      {
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "name": "ask",
+        "type": "uint256"
+      },
+      {
+        "name": "id",
+        "type": "bytes32"
+      },
+      {
+        "name": "expiry",
+        "type": "uint256"
+      },
+      {
+        "name": "state",
+        "type": "uint8"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_target",
+        "type": "address"
+      },
+      {
+        "name": "_data",
+        "type": "bytes"
+      }
+    ],
+    "name": "execute",
+    "outputs": [
+      {
+        "name": "response",
+        "type": "bytes"
+      }
+    ],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_code",
+        "type": "bytes"
+      },
+      {
+        "name": "_data",
+        "type": "bytes"
+      }
+    ],
+    "name": "execute",
+    "outputs": [
+      {
+        "name": "target",
+        "type": "address"
+      },
+      {
+        "name": "response",
+        "type": "bytes"
+      }
+    ],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [],
+    "name": "unpause",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "isPauser",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "cache",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "bidId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getBidInfo",
+    "outputs": [
+      {
+        "name": "cdp",
+        "type": "bytes32"
+      },
+      {
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "name": "revoked",
+        "type": "bool"
+      },
+      {
+        "name": "expiry",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [],
+    "name": "renouncePauser",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "authority_",
+        "type": "address"
+      }
+    ],
+    "name": "setAuthority",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "addPauser",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [],
+    "name": "pause",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_cacheAddr",
+        "type": "address"
+      }
+    ],
+    "name": "setCache",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "auctionId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getBids",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "revokedBids",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "authority",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "auctionId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getAuctionInfo",
+    "outputs": [
+      {
+        "name": "number",
+        "type": "uint256"
+      },
+      {
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "name": "ask",
+        "type": "uint256"
+      },
+      {
+        "name": "expiry",
+        "type": "uint256"
+      },
+      {
+        "name": "state",
+        "type": "uint8"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "fee",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "name": "_mkrAddr",
+        "type": "address"
+      },
+      {
+        "name": "_cacheAddr",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "fallback"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "cdp",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "auctionId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "ask",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "expiry",
+        "type": "uint256"
+      }
+    ],
+    "name": "LogAuctionEntry",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "auctionId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "cdp",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "state",
+        "type": "uint8"
+      }
+    ],
+    "name": "LogEndedAuction",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "cdp",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "auctionId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "LogConclusion",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "cdp",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "bidId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "expiryBlockTimestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "LogSubmittedBid",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "cdp",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "bidId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "LogRevokedBid",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "cdp",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "to",
+        "type": "address"
+      }
+    ],
+    "name": "LogCDPTransfer",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "cdp",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "auctionId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "newAsk",
+        "type": "uint256"
+      }
+    ],
+    "name": "LogAddedCollateral",
+    "type": "event"
+  },
+  {
+    "anonymous": true,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "sig",
+        "type": "bytes4"
+      },
+      {
+        "indexed": true,
+        "name": "guy",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "foo",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "name": "bar",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "name": "wad",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "fax",
+        "type": "bytes"
+      }
+    ],
+    "name": "LogNote",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "authority",
+        "type": "address"
+      }
+    ],
+    "name": "LogSetAuthority",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "LogSetOwner",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Paused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Unpaused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "PauserAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "PauserRemoved",
+    "type": "event"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "cdp",
+        "type": "bytes32"
+      },
+      {
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "name": "ask",
+        "type": "uint256"
+      },
+      {
+        "name": "expiry",
+        "type": "uint256"
+      },
+      {
+        "name": "salt",
+        "type": "uint256"
+      }
+    ],
+    "name": "listCDP",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "auctionId",
+        "type": "bytes32"
+      },
+      {
+        "name": "bidId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "resolveAuction",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "auctionId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "cancelAuction",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "auctionId",
+        "type": "bytes32"
+      },
+      {
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "name": "expiry",
+        "type": "uint256"
+      },
+      {
+        "name": "salt",
+        "type": "uint256"
+      }
+    ],
+    "name": "submitBid",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "bidId",
+        "type": "bytes32"
+      }
+    ],
+    "name": "revokeBid",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "auctionId",
+        "type": "bytes32"
+      },
+      {
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "name": "newAsk",
+        "type": "uint256"
+      }
+    ],
+    "name": "fundCDP",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "newFeeTaker",
+        "type": "address"
+      }
+    ],
+    "name": "setFeeTaker",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "newFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "setFee",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

@@ -4,31 +4,22 @@ import "./Auction.sol";
 import "./lib/ITub.sol";
 
 contract AuctionProxy {
-    Auction public auction;
-    ITub public tub;
-
-    constructor(address _auction) 
-        public
-    {
-        auction = Auction(_auction);
-        tub = ITub(address(auction.tub()));
-    }
-
     function createAuction(
+        address auction,
+        address tub,
         bytes32 cdp,
         address token,
         uint256 ask,
         uint256 expiry,
-        uint salt
-    ) external returns (bytes32) {
-        bytes32 auctionId = auction.listCDP(
+        uint256 salt
+    ) public {
+        Auction(auction).listCDP(
             cdp,
             token,
             ask,
             expiry,
             salt
         );
-        tub.give(cdp, address(auction));
-        return auctionId;
+        ITub(tub).give(cdp, auction);
     }
 }

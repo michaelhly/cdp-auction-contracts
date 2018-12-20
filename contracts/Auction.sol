@@ -200,7 +200,7 @@ contract Auction is Pausable, AuctionEvents{
         address token,
         uint256 ask,
         uint256 expiry,
-        uint salt
+        uint256 salt
     )
         external
         whenNotPaused
@@ -285,7 +285,7 @@ contract Auction is Pausable, AuctionEvents{
         bytes32 auctionId,
         uint256 value,
         uint256 expiry,
-        uint salt
+        uint256 salt
     )
         external
         whenNotPaused
@@ -462,7 +462,7 @@ contract Auction is Pausable, AuctionEvents{
         bytes32 _cup, 
         address _seller, 
         uint256 _expiry, 
-        uint _salt
+        uint256 _salt
     )
         internal
         pure
@@ -488,7 +488,7 @@ contract Auction is Pausable, AuctionEvents{
         address _buyer,
         uint256 _value,
         uint256 _expiry,
-        uint _salt
+        uint256 _salt
     ) 
         internal
         pure

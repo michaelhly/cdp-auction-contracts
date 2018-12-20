@@ -3,16 +3,18 @@ const KovanSaiTub = "0xa71937147b55deb8a530c7229c442fd3f31b7db2";
 
 module.exports = function(deployer, network) {
   const SaiTub = artifacts.require("SaiTub");
+  const SaiProxy = artifacts.require("SaiProxy");
   const DSProxyFactory = artifacts.require("DSProxyFactory");
   const AuctionProxy = artifacts.require("AuctionProxy");
   const Auction = artifacts.require("Auction");
 
+  deployer.deploy(AuctionProxy);
+
   if (network == "kovan") {
-    return deployer.deploy(Auction, KovanSaiTub).then(async () => {
-      await deployer.deploy(AuctionProxy, Auction.address);
-    });
+    deployer.deploy(Auction, KovanSaiTub);
   } else {
     deployer.deploy(DSProxyFactory);
+    deployer.deploy(SaiProxy);
     return deployer
       .deploy(
         SaiTub,
