@@ -8,7 +8,7 @@ const web3 = new Web3(
 
 const Maker = require("@makerdao/dai");
 const maker = Maker.create("kovan", {
-  privateKey: "fd4c9f5afcf167e68c7894605fe84e6ee814cd7e04b974dc4b6f150131eb638d"
+  privateKey: ""
 });
 
 const Auction = artifacts.require("Auction");
