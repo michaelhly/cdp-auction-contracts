@@ -14,25 +14,39 @@ class App extends Component {
   };
 
   fetchAuctions = () => {
+    let auctions = [];
+
     const auctionInstance = new web3.eth.Contract(
       Auction.abi,
       Auction.networks["42"].address
     );
 
-    const auctionLog = auctionInstance.getPastEvents(
+    auctionInstance.getPastEvents(
       "LogAuctionEntry",
       { fromBlock: 0, toBlock: "latest" },
       (errors, events) => {
         if (!errors) {
-          console.log(events);
+          for (var i = 0; i < events.length; i++) {
+            let auction = {
+              key: events[i].returnValues["auctionId"],
+              ask: events[i].returnValues["ask"],
+              cdp: events[i].returnValues["cdp"],
+              expiry: events[i].returnValues["expiry"],
+              seller: events[i].returnValues["seller"],
+              token: events[i].returnValues["token"]
+            };
+            auctions.push(auction);
+          }
         }
       }
     );
+    return auctions;
   };
 
   constructor() {
     super();
-    this.fetchAuctions();
+    const auctions = this.fetchAuctions();
+    this.state = { auctions: auctions };
   }
 
   render() {

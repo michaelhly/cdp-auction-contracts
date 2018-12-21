@@ -35,7 +35,7 @@ contract AuctionRegistry {
         uint256 expiryBlock;
     }
 
-    uint256 totalListings = 0;
+    uint256 public totalListings = 0;
 
     // Mapping of auctionIds to its corresponding CDP auction
     mapping (bytes32 => AuctionInfo) internal auctions;
