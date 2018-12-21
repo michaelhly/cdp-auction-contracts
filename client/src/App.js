@@ -9,16 +9,15 @@ const Auction = require("./artifacts/Auction");
 
 class App extends Component {
   state = {
-    auction: null,
     auctions: [],
     tokens: []
   };
 
-  fetchAuctions = async => {
-    const auctionInstance = (this.auction = new web3.eth.Contract(
+  fetchAuctions = () => {
+    const auctionInstance = new web3.eth.Contract(
       Auction.abi,
       Auction.networks["42"].address
-    ));
+    );
 
     const auctionLog = auctionInstance.getPastEvents(
       "LogAuctionEntry",
