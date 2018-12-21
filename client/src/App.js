@@ -2,7 +2,40 @@ import React, { Component } from "react";
 import logo from "./logo.svg";
 import "./App.css";
 
+import Web3 from "web3";
+const web3 = new Web3(new Web3(window.web3.currentProvider));
+
+const Auction = require("./artifacts/Auction");
+
 class App extends Component {
+  state = {
+    auction: null,
+    auctions: [],
+    tokens: []
+  };
+
+  fetchAuctions = async => {
+    const auctionInstance = (this.auction = new web3.eth.Contract(
+      Auction.abi,
+      Auction.networks["42"].address
+    ));
+
+    const auctionLog = auctionInstance.getPastEvents(
+      "LogAuctionEntry",
+      { fromBlock: 0, toBlock: "latest" },
+      (errors, events) => {
+        if (!errors) {
+          console.log(events);
+        }
+      }
+    );
+  };
+
+  constructor() {
+    super();
+    this.fetchAuctions();
+  }
+
   render() {
     return (
       <div className="App">
