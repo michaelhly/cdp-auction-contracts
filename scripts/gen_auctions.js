@@ -8,13 +8,13 @@ const web3 = new Web3(
 
 const Maker = require("@makerdao/dai");
 const maker = Maker.create("kovan", {
-  privateKey: ""
+  privateKey: "fd4c9f5afcf167e68c7894605fe84e6ee814cd7e04b974dc4b6f150131eb638d"
 });
 
 const Auction = artifacts.require("Auction");
 const AuctionProxy = artifacts.require("AuctionProxy");
-const SaiTubAbi = require("../abi/SaiTub.json");
-const ProxyAbi = require("../abi/DSProxy.json");
+const SaiTub_ = require("../build/contracts/SaiTub.json");
+const DSProxy = require("../build/contracts/DSProxy.json");
 
 const BN = require("bn.js");
 const { promisify } = require("es6-promisify");
@@ -91,8 +91,8 @@ const main = async () => {
     .getContractByName("SAI_PROXY").wrappedContract.address;
 
   const CdpAuction = await Auction.deployed();
-  const SaiTub = new web3.eth.Contract(SaiTubAbi, saiTubAddr);
-  const MyProxy = new web3.eth.Contract(ProxyAbi, myProxyAddr);
+  const SaiTub = new web3.eth.Contract(SaiTub_.abi, saiTubAddr);
+  const MyProxy = new web3.eth.Contract(DSProxy.abi, myProxyAddr);
 
   const calldata_open = web3.eth.abi.encodeFunctionCall(
     {
@@ -122,7 +122,7 @@ const main = async () => {
     });
 
     var cup = event_NewCup[0].returnValues.cup;
-    var ask = web3.utils.toWei(new BN(random(10)));
+    var ask = web3.utils.toWei(new BN(random(10) + 1));
     var expiry = new BN(random(500000)) + new BN(openCdp.blockNumber);
     var salt = new BN(random(100000));
     var callData = genCallDataForAuction(
