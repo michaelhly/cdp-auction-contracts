@@ -124,7 +124,8 @@ contract("test1", accounts => {
 
     assert.equal(await saiTub.lad(cdpCup), auction.address);
     assert.equal(auctionEntry[0].args.cdp, cdpCup);
-    assert.equal(auctionEntry[0].args.seller, myProxy.address);
+    assert.equal(auctionEntry[0].args.seller, await myProxy.owner());
+    assert.equal(auctionEntry[0].args.proxy, myProxy.address);
     assert.equal(auctionEntry[0].args.token, tokens[0]);
     assert.equal(auctionEntry[0].args.ask.toString(), ask.toString());
     assert.equal(auctionEntry[0].args.expiry.toString(), expiry.toString());

@@ -15,6 +15,7 @@ contract AuctionProxy {
     ) public {
         Auction(auction).listCDP(
             cdp,
+            msg.sender,
             token,
             ask,
             expiry,

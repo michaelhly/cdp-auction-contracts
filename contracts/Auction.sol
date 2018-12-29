@@ -4,6 +4,7 @@ import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./lib/ITub.sol";
+import "./lib/dappsys-monolithic/proxy.sol";
 
 contract AuctionRegistry {
     enum AuctionState {
@@ -18,6 +19,7 @@ contract AuctionRegistry {
         uint256 listingNumber;
         bytes32 cdp;
         address seller;
+        address proxy;
         address token;
         uint256 ask;
         bytes32 auctionId;
@@ -28,6 +30,7 @@ contract AuctionRegistry {
     struct BidInfo {
         bytes32 cdp;
         address buyer;
+        address proxy;
         uint256 value;
         address token;
         bytes32 bidId;
@@ -56,6 +59,7 @@ contract AuctionRegistry {
             uint256 number,
             bytes32 cdp,
             address seller,
+            address proxy,
             address token,
             uint256 ask,
             uint256 expiry,
@@ -65,6 +69,7 @@ contract AuctionRegistry {
         number = auctions[auctionId].listingNumber;
         cdp    = auctions[auctionId].cdp;
         seller = auctions[auctionId].seller;
+        proxy  = auctions[auctionId].proxy;
         token  = auctions[auctionId].token;
         ask    = auctions[auctionId].ask;
         expiry = auctions[auctionId].expiryBlock;
@@ -78,6 +83,7 @@ contract AuctionRegistry {
             bytes32 id,
             bytes32 cdp,
             address seller,
+            address proxy,
             address token,
             uint256 ask,
             uint256 expiry,
@@ -87,6 +93,7 @@ contract AuctionRegistry {
         id     = allAuctions[index].auctionId;
         cdp    = allAuctions[index].cdp;
         seller = allAuctions[index].seller;
+        proxy  = allAuctions[index].proxy;
         token  = allAuctions[index].token;
         ask    = allAuctions[index].ask;
         expiry = allAuctions[index].expiryBlock;
@@ -107,6 +114,7 @@ contract AuctionRegistry {
         returns (
             bytes32 cdp,
             address buyer,
+            address proxy,
             uint256 value,
             address token,
             bool    revoked,
@@ -115,6 +123,7 @@ contract AuctionRegistry {
     {
         cdp     = bidRegistry[bidId].cdp;
         buyer   = bidRegistry[bidId].buyer;
+        proxy   = bidRegistry[bidId].proxy;
         value   = bidRegistry[bidId].value;
         token   = bidRegistry[bidId].token;
         revoked = bidRegistry[bidId].revoked; 
@@ -126,8 +135,9 @@ contract AuctionEvents is AuctionRegistry{
     event LogAuctionEntry(
         bytes32 cdp,
         address indexed seller,
+        address indexed proxy,
         bytes32 indexed auctionId,
-        address indexed token,
+        address token,
         uint256 ask,
         uint256 expiry
     );
@@ -150,8 +160,9 @@ contract AuctionEvents is AuctionRegistry{
     event LogSubmittedBid(
         bytes32 cdp,
         address indexed buyer,
+        address indexed proxy,
         uint256 value,
-        address indexed token,
+        address token,
         bytes32 indexed bidId,
         uint256 expiryBlock
     );
@@ -197,6 +208,7 @@ contract Auction is Pausable, AuctionEvents{
      */
     function listCDP(
         bytes32 cdp,
+        address seller,
         address token,
         uint256 ask,
         uint256 expiry,
@@ -207,6 +219,7 @@ contract Auction is Pausable, AuctionEvents{
         returns (bytes32)
     {
         require(tub.lad(cdp) != address(this));
+        require(DSProxy(msg.sender).owner() == seller);
 
         bytes32 auctionId = _genAuctionId(
             ++totalListings,
@@ -221,6 +234,7 @@ contract Auction is Pausable, AuctionEvents{
         AuctionInfo memory entry = AuctionInfo(
             totalListings,
             cdp,
+            seller,
             msg.sender,
             token,
             ask,
@@ -233,6 +247,7 @@ contract Auction is Pausable, AuctionEvents{
 
         emit LogAuctionEntry(
             cdp,
+            seller,
             msg.sender,
             auctionId,
             token,
@@ -262,7 +277,7 @@ contract Auction is Pausable, AuctionEvents{
         require(bid.value != 0);
         require(bid.expiryBlock <= block.number);
 
-        concludeAuction(entry, bid.buyer, bid.value);
+        concludeAuction(entry, bid.buyer, bid.proxy, bid.value);
     }
 
     /* Remove a CDP from auction */
@@ -283,6 +298,7 @@ contract Auction is Pausable, AuctionEvents{
 
     function submitBid(
         bytes32 auctionId,
+        address proxy,
         uint256 value,
         uint256 expiry,
         uint256 salt
@@ -294,6 +310,7 @@ contract Auction is Pausable, AuctionEvents{
         AuctionInfo memory entry = auctions[auctionId];
         require(tub.lad(entry.cdp) == address(this));
         require(entry.seller != msg.sender);
+        require(DSProxy(proxy).owner() == msg.sender);
         require(
             entry.state == AuctionState.Live ||
             entry.state == AuctionState.Waiting
@@ -321,6 +338,7 @@ contract Auction is Pausable, AuctionEvents{
         BidInfo memory bid = BidInfo(
             entry.cdp,
             msg.sender,
+            proxy,
             value,
             entry.token,
             bidId,
@@ -333,7 +351,7 @@ contract Auction is Pausable, AuctionEvents{
 
         if(value >= entry.ask) {
             // Allow auction to conclude if bid >= ask
-            concludeAuction(entry, msg.sender, value);
+            concludeAuction(entry, msg.sender, proxy, value);
         } else {
             // Auction tokens held in escrow until bid expires
             IERC20(entry.token).transferFrom(msg.sender, this, value);
@@ -342,6 +360,7 @@ contract Auction is Pausable, AuctionEvents{
         emit LogSubmittedBid(
             entry.cdp,
             msg.sender,
+            proxy,
             value,
             entry.token,
             bidId,
@@ -377,7 +396,6 @@ contract Auction is Pausable, AuctionEvents{
         AuctionInfo memory entry = auctions[auctionId];
         require(tub.lad(entry.cdp) == address(this));
         require(entry.seller == msg.sender);
-        require(tub.lad(entry.cdp) == address(this));
 
         tub.lock(entry.cdp, value);
         entry.ask = newAsk ==0 ? entry.ask : newAsk;
@@ -391,7 +409,12 @@ contract Auction is Pausable, AuctionEvents{
         );
     }
 
-    function concludeAuction(AuctionInfo entry, address winner, uint256 value) 
+    function concludeAuction(
+        AuctionInfo entry,
+        address winner, 
+        address proxy, 
+        uint256 value
+    ) 
         internal
     {
         uint256 service = value.mul(fee);
@@ -400,7 +423,7 @@ contract Auction is Pausable, AuctionEvents{
 
         transferCDP(
             entry.cdp, 
-            winner
+            proxy
         );
 
         updateAuction(entry, AuctionState.Ended);
@@ -420,7 +443,7 @@ contract Auction is Pausable, AuctionEvents{
         updateAuction(entry, state);
         transferCDP(
             entry.cdp,
-            entry.seller
+            entry.proxy
         );
 
         emit LogEndedAuction(
@@ -443,6 +466,7 @@ contract Auction is Pausable, AuctionEvents{
         bytes32 cdp, address to
     ) internal
     {
+        require(DSProxy(to).owner() == msg.sender);
         tub.give(cdp, to);
 
         emit LogCDPTransfer(
