@@ -1,9 +1,10 @@
+Network: Kovan
 
-Kovan
--------
-~~Auction: 0x4384ad316440e971d05c9515271631cf1c6bf812~~
-~~AuctionProxy: 0x29a274952cd801cd96bc4c00274c58d2038778fc~~
-
-Need to re-deployment contracts!
-
- 
+```
+ Deploying AuctionProxy...
+  ... 0x5f7bd3be5aab801d43f5fb3e7a17fea4dc8bacc5f0e36e3426f5e180af122768
+  AuctionProxy: 0x7abfba5b83fe2c30845c6007873546368cfb4c2e
+  Deploying Auction...
+  ... 0x0f51d195a029b586594797adffde748065b186a0eb8b48d996d1e6a511e884cd
+  Auction: 0xf0b7651d202932d62048948d74e43f9815840183
+```
