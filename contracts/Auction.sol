@@ -299,6 +299,7 @@ contract Auction is Pausable, AuctionEvents{
     function submitBid(
         bytes32 auctionId,
         address proxy,
+        address token,
         uint256 value,
         uint256 expiry,
         uint256 salt
@@ -309,7 +310,6 @@ contract Auction is Pausable, AuctionEvents{
     {
         AuctionInfo memory entry = auctions[auctionId];
         require(tub.lad(entry.cdp) == address(this));
-        require(entry.seller != msg.sender);
         require(DSProxy(proxy).owner() == msg.sender);
         require(
             entry.state == AuctionState.Live ||
@@ -340,7 +340,7 @@ contract Auction is Pausable, AuctionEvents{
             msg.sender,
             proxy,
             value,
-            entry.token,
+            token,
             bidId,
             false,
             expiry
@@ -349,12 +349,12 @@ contract Auction is Pausable, AuctionEvents{
         bidRegistry[bidId] = bid;
         auctionToBids[auctionId].push(bidId);
 
-        if(value >= entry.ask) {
+        if(value >= entry.ask && token == entry.token) {
             // Allow auction to conclude if bid >= ask
             concludeAuction(entry, msg.sender, proxy, value);
         } else {
             // Auction tokens held in escrow until bid expires
-            IERC20(entry.token).transferFrom(msg.sender, this, value);
+            IERC20(token).transferFrom(msg.sender, this, value);
         }
 
         emit LogSubmittedBid(
@@ -362,7 +362,7 @@ contract Auction is Pausable, AuctionEvents{
             msg.sender,
             proxy,
             value,
-            entry.token,
+            token,
             bidId,
             expiry
         );
