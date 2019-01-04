@@ -44,13 +44,25 @@ contract AuctionRegistry {
     mapping (bytes32 => AuctionInfo) internal auctions;
     // Mapping for iterative lookup of all auctions
     mapping (uint256 => AuctionInfo) internal allAuctions;
+    // Mapping of users to AuctionIds
+    mapping (address => bytes32[]) internal userToAuctions;
 
     // Registry mapping bidIds to their corresponding entries
     mapping (bytes32 => BidInfo) internal bidRegistry;
     // Mapping of auctionIds to bidIds
     mapping (bytes32 => bytes32[]) internal auctionToBids;
+    // Mapping of users to bidIds
+    mapping (address => bytes32[]) internal userToBids;
     // Mapping of revoked bids
     mapping (bytes32 => bool) public revokedBids;
+
+    function getAuctionsByUser(address auctioneer)
+        public
+        view
+        returns (bytes32[])
+    {
+        return userToAuctions[auctioneer];
+    }
 
     function getAuctionInfo(bytes32 auctionId)
         public
@@ -106,6 +118,14 @@ contract AuctionRegistry {
         returns (bytes32[])
     {
         return auctionToBids[auctionId];
+    }
+
+    function getBidsByUser(address bidder)
+        public
+        view
+        returns (bytes32[])
+    {
+        return userToBids[bidder];
     }
 
     function getBidInfo(bytes32 bidId)
@@ -244,6 +264,7 @@ contract Auction is Pausable, AuctionEvents{
         );
 
         updateAuction(entry, AuctionState.Waiting);
+        userToAuctions[seller].push(auctionId);
 
         emit LogAuctionEntry(
             cdp,
@@ -347,6 +368,7 @@ contract Auction is Pausable, AuctionEvents{
         );
 
         bidRegistry[bidId] = bid;
+        userToBids[msg.sender].push(bidId);
         auctionToBids[auctionId].push(bidId);
 
         if(value >= entry.ask && token == entry.token) {
@@ -377,8 +399,7 @@ contract Auction is Pausable, AuctionEvents{
         require(msg.sender == bid.buyer);
         require(!revokedBids[bidId]);
         revokedBids[bidId] = true;
-        bid.revoked = true;
-        bidRegistry[bidId] = bid;
+        delete bidRegistry[bidId];
         IERC20(bid.token).transfer(msg.sender, bid.value);
 
         emit LogRevokedBid(
