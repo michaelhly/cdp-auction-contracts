@@ -1,10 +1,9 @@
-const chai = require("chai");
-const assert = chai.assert;
+const HDWalletProvider = require("truffle-hdwallet-provider");
+
+const provider = new HDWalletProvider("", "https://kovan.infura.io/v3/APIKEY");
 
 const Web3 = require("web3");
-const web3 = new Web3(
-  new Web3.providers.WebsocketProvider("ws://127.0.0.1:8546")
-);
+const web3 = new Web3(provider);
 
 const Maker = require("@makerdao/dai");
 const maker = Maker.create("kovan", {
@@ -17,16 +16,18 @@ const SaiTub_ = require("../build/contracts/SaiTub.json");
 const DSProxy = require("../build/contracts/DSProxy.json");
 
 const BN = require("bn.js");
-const { promisify } = require("es6-promisify");
-
 const random = max => Math.floor(Math.random() * (max + 1));
 
 //Specify Number of Auctions
 var numAuctions = 5;
 //Add ERC20 tokens here
-var tokens = ["0xb06d72a24df50d4e2cac133b320c5e7de3ef94cb"];
+var tokens = [
+  "0xb06d72a24df50d4e2cac133b320c5e7de3ef94cb",
+  "0xd0a1e359811322d97991e03f863a0c30c2cf029c",
+  "0xC4375B7De8af5a38a93548eb8453a498222C4fF2"
+];
 
-genCallDataForAuction = (
+const genCallDataForAuction = (
   auctionAddr,
   tubAddr,
   cupId,
@@ -122,14 +123,16 @@ const main = async () => {
     });
 
     var cup = event_NewCup[0].returnValues.cup;
+
     var ask = web3.utils.toWei(new BN(random(10) + 1));
     var expiry = new BN(random(500000)) + new BN(openCdp.blockNumber);
     var salt = new BN(random(100000));
+
     var callData = genCallDataForAuction(
       CdpAuction.address,
       saiTubAddr,
       cup,
-      tokens[0],
+      tokens[random(2)],
       ask.toString(),
       expiry.toString(),
       salt.toString()
