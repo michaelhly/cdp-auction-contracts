@@ -298,7 +298,7 @@ contract Auction is Pausable, AuctionEvents{
         require(bid.value != 0);
         require(bid.expiryBlock <= block.number);
 
-        concludeAuction(entry, bid.buyer, bid.proxy, bid.value);
+        concludeAuction(entry, bid.buyer, bid.proxy, bid.token, bid.value);
     }
 
     /* Remove a CDP from auction */
@@ -336,7 +336,7 @@ contract Auction is Pausable, AuctionEvents{
             entry.state == AuctionState.Live ||
             entry.state == AuctionState.Waiting
         );
-
+        
         if(entry.expiryBlock > block.number) {
             endAuction(entry, AuctionState.Expired);
             return bytes32(0);
@@ -373,7 +373,7 @@ contract Auction is Pausable, AuctionEvents{
 
         if(value >= entry.ask && token == entry.token) {
             // Allow auction to conclude if bid >= ask
-            concludeAuction(entry, msg.sender, proxy, value);
+            concludeAuction(entry, msg.sender, proxy, entry.token, value);
         } else {
             // Auction tokens held in escrow until bid expires
             IERC20(token).transferFrom(msg.sender, this, value);
@@ -434,13 +434,14 @@ contract Auction is Pausable, AuctionEvents{
         AuctionInfo entry,
         address winner, 
         address proxy, 
+        address token,
         uint256 value
     ) 
         internal
     {
         uint256 service = value.mul(fee);
-        IERC20(entry.token).transfer(feeTaker, service);
-        IERC20(entry.token).transfer(entry.seller, value.sub(service));
+        IERC20(token).transfer(feeTaker, service);
+        IERC20(token).transfer(entry.seller, value.sub(service));
 
         transferCDP(
             entry.cdp, 
