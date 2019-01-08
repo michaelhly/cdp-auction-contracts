@@ -128,6 +128,7 @@ contract("test1", accounts => {
         .get(cb)
     )();
 
+    assert.equal(await saiTub.lad(cdpCup), auction.address);
     assert.equal(auctionEntry[0].args.cdp, cdpCup);
     assert.equal(auctionEntry[0].args.seller, await myProxy.owner());
     assert.equal(auctionEntry[0].args.proxy, myProxy.address);
