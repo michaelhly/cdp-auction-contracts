@@ -199,13 +199,6 @@ contract AuctionEvents is AuctionRegistry{
         address from,
         address to
     );
-
-    event LogAddedCollateral(
-        bytes32 cdp,
-        bytes32 auctionId,
-        uint256 value,
-        uint256 newAsk
-    );
 }
 
 contract Auction is Pausable, AuctionEvents{
@@ -407,26 +400,6 @@ contract Auction is Pausable, AuctionEvents{
             msg.sender,
             bidId,
             bid.value
-        );
-    }
-
-    /* Fund additional collateral to CDP being auctioned */
-    function fundCDP(bytes32 auctionId, uint value, uint256 newAsk) 
-        external 
-    {
-        AuctionInfo memory entry = auctions[auctionId];
-        require(tub.lad(entry.cdp) == address(this));
-        require(entry.seller == msg.sender);
-
-        tub.lock(entry.cdp, value);
-        entry.ask = newAsk ==0 ? entry.ask : newAsk;
-        updateAuction(entry, entry.state);
-
-        emit LogAddedCollateral(
-            entry.cdp,
-            entry.auctionId,
-            value,
-            newAsk
         );
     }
 
