@@ -1,13 +1,14 @@
 const HDWalletProvider = require("truffle-hdwallet-provider");
-
-const provider = new HDWalletProvider("", "https://kovan.infura.io/v3/APIKEY");
-
+const provider = new HDWalletProvider(
+  process.env.MNEMONIC,
+  `https://kovan.infura.io/v3/${process.env.API_KEY}`
+);
 const Web3 = require("web3");
 const web3 = new Web3(provider);
 
 const Maker = require("@makerdao/dai");
 const maker = Maker.create("kovan", {
-  privateKey: ""
+  privateKey: process.env.PRIVATE_KEY
 });
 
 const Auction = artifacts.require("Auction");
@@ -125,7 +126,7 @@ const main = async () => {
     var cup = event_NewCup[0].returnValues.cup;
 
     var ask = web3.utils.toWei(new BN(random(10) + 1));
-    var expiry = new BN(random(500000)) + new BN(openCdp.blockNumber);
+    var expiry = new BN(random(500)).add(new BN(openCdp.blockNumber));
     var salt = new BN(random(100000));
 
     var callData = genCallDataForAuction(

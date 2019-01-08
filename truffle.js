@@ -13,22 +13,7 @@
  */
 
 const HDWalletProvider = require("truffle-hdwallet-provider");
-const mnemonic = "";
-const apiKey = "";
 
-module.exports = {
-  networks: {
-    kovan: {
-      provider: () =>
-        new HDWalletProvider(mnemonic, `https://kovan.infura.io/${apiKey}`),
-      network_id: 42,
-      gas: 6000000,
-      gasPrice: 8000000000
-    }
-  }
-};
-
-/*
 module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>
   // to customize your Truffle configuration!
@@ -39,10 +24,12 @@ module.exports = {
       network_id: "*"
     },
     kovan: {
-      host: "127.0.0.1",
-      port: 8545,
+      provider: () =>
+        new HDWalletProvider(
+          process.env.MNEMONIC,
+          `https://kovan.infura.io/${process.env.API_KEY}`
+        ),
       network_id: 42,
-      from: "0x4e82303b75dc96c02a2eb3765d016187bd5bec14",
       gas: 6000000,
       gasPrice: 8000000000
     }
@@ -52,4 +39,3 @@ module.exports = {
     runs: 500
   }
 };
-*/
