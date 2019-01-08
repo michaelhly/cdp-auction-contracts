@@ -10,14 +10,15 @@ const SaiTub = artifacts.require("SaiTub");
 const SaiProxy = artifacts.require("SaiProxy");
 const AuctionProxy = artifacts.require("AuctionProxy");
 const Auction = artifacts.require("Auction");
+const TestToken = artifacts.require("SampleToken");
 
 const BN = require("bn.js");
 const { promisify } = require("es6-promisify");
 
-const random = max => Math.floor(Math.random() * (max + 1));
+const random = max => Math.floor((Math.random() + 1) * max);
 
 //Fake ERC20 token
-var tokens = ["0xb06d72a24df50d4e2cac133b320c5e7de3ef94cb"];
+const tokens = ["0xb06d72a24df50d4e2cac133b320c5e7de3ef94cb"];
 
 contract("test1", accounts => {
   let proxyFactory = null;
@@ -26,6 +27,9 @@ contract("test1", accounts => {
   let auctionProxy = null;
   let myProxy = null;
   let saiProxy = null;
+  let token = null;
+  let auctionId = null;
+  let ask = web3.utils.toWei(new BN(random(10)));
 
   before(async () => {
     proxyFactory = await DSProxyFactory.deployed();
@@ -33,7 +37,8 @@ contract("test1", accounts => {
     saiTub = await SaiTub.deployed();
     auction = await Auction.deployed();
     auctionProxy = await AuctionProxy.deployed();
-    var build_tx = await proxyFactory.build();
+    token = await TestToken.deployed();
+    const build_tx = await proxyFactory.build();
     myProxy = await DSProxy.at(build_tx.logs[0].args.proxy);
     assert.equal(await myProxy.owner(), accounts[0]);
   });
@@ -58,8 +63,7 @@ contract("test1", accounts => {
 
     assert(await saiTub.lad(cdpCup), myProxy.address);
 
-    const ask = web3.utils.toWei(new BN(random(10)));
-    const expiry = new BN(random(500000)) + new BN(openCdp.receipt.blockNumber);
+    const expiry = new BN(random(500)).add(new BN(openCdp.receipt.blockNumber));
     const salt = new BN(random(100000));
 
     const calldata_createAuction = web3.eth.abi.encodeFunctionCall(
@@ -113,6 +117,8 @@ contract("test1", accounts => {
       calldata_createAuction
     );
 
+    auctionId = createAuction.receipt.logs[1].topics[3];
+
     const auctionEntry = await promisify(cb =>
       auction
         .LogAuctionEntry(
@@ -122,12 +128,42 @@ contract("test1", accounts => {
         .get(cb)
     )();
 
-    assert.equal(await saiTub.lad(cdpCup), auction.address);
     assert.equal(auctionEntry[0].args.cdp, cdpCup);
     assert.equal(auctionEntry[0].args.seller, await myProxy.owner());
     assert.equal(auctionEntry[0].args.proxy, myProxy.address);
     assert.equal(auctionEntry[0].args.token, tokens[0]);
     assert.equal(auctionEntry[0].args.ask.toString(), ask.toString());
     assert.equal(auctionEntry[0].args.expiry.toString(), expiry.toString());
+  });
+
+  it("Test: submitBid, bid entry", async () => {
+    const build_tx = await proxyFactory.build({ from: accounts[1] });
+    const acc1Proxy = await DSProxy.at(build_tx.logs[0].args.proxy);
+    assert.equal(await acc1Proxy.owner(), accounts[1]);
+    await token.transfer(accounts[1], ask.toString());
+    await token.approve(auction.address, ask.toString(), { from: accounts[1] });
+
+    const bid = new BN(ask).sub(new BN(10000));
+    const expiry = new BN(random(500000));
+    const salt = new BN(random(100000));
+
+    const submitBid = await auction.submitBid(
+      auctionId,
+      acc1Proxy.address,
+      token.address,
+      bid.toString(),
+      expiry.toString(),
+      salt.toString(),
+      { from: accounts[1] }
+    );
+
+    const auctionBalance = await token.balanceOf(auction.address);
+    assert.equal(auctionBalance.toString(), bid.toString());
+
+    const LogSubmittedBid = submitBid.logs[0].args;
+    assert.equal(LogSubmittedBid.buyer, accounts[1]);
+    assert.equal(LogSubmittedBid.value.toString(), bid.toString());
+    assert.equal(LogSubmittedBid.token, token.address);
+    assert.equal(LogSubmittedBid.expiryBlock.toString(), expiry.toString());
   });
 });
