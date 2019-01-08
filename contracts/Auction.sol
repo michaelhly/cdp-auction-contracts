@@ -289,14 +289,14 @@ contract Auction is Pausable, AuctionEvents{
         require(!revokedBids[bidId]);
         require(entry.state == AuctionState.Live);
 
-        if(block.number > entry.expiryBlock) {
+        if(block.number >= entry.expiryBlock) {
             endAuction(entry, AuctionState.Expired);
             return;
         }
 
         BidInfo memory bid = bidRegistry[bidId];
         require(bid.value != 0);
-        require(bid.expiryBlock <= block.number);
+        require(block.number < bid.expiryBlock);
 
         concludeAuction(entry, bid.buyer, bid.proxy, bid.token, bid.value);
     }
@@ -311,7 +311,7 @@ contract Auction is Pausable, AuctionEvents{
                 entry.state == AuctionState.Expired);
         require(msg.sender == entry.seller);
 
-        AuctionState state = (block.number > entry.expiryBlock)
+        AuctionState state = (block.number >= entry.expiryBlock)
                                 ? AuctionState.Expired
                                 : AuctionState.Cancelled;
         endAuction(entry, state);
@@ -337,7 +337,7 @@ contract Auction is Pausable, AuctionEvents{
             entry.state == AuctionState.Waiting
         );
         
-        if(entry.expiryBlock > block.number) {
+        if(block.number >= entry.expiryBlock) {
             endAuction(entry, AuctionState.Expired);
             return bytes32(0);
         }
