@@ -231,8 +231,8 @@ contract Auction is Pausable, AuctionEvents{
         whenNotPaused
         returns (bytes32)
     {
-        require(tub.lad(cdp) != address(this));
-        require(DSProxy(msg.sender).owner() == seller);
+        require(tub.lad(cdp) != address(this), "cdp already on auction");
+        require(DSProxy(msg.sender).owner() == seller, "proxy-seller mismatch");
 
         bytes32 auctionId = _genAuctionId(
             ++totalListings,
@@ -242,7 +242,7 @@ contract Auction is Pausable, AuctionEvents{
             salt
         );
 
-        require(auctions[auctionId].auctionId == bytes32(0));
+        require(auctions[auctionId].auctionId == bytes32(0), "auctionId already used");
 
         AuctionInfo memory entry = AuctionInfo(
             totalListings,
@@ -277,10 +277,10 @@ contract Auction is Pausable, AuctionEvents{
         external 
     {
         AuctionInfo memory entry = auctions[auctionId];
-        require(tub.lad(entry.cdp) == address(this));
-        require(entry.seller == msg.sender);
-        require(!revokedBids[bidId]);
-        require(entry.state == AuctionState.Live);
+        require(tub.lad(entry.cdp) == address(this), "cdp not owned by auction");
+        require(entry.seller == msg.sender, "caller must be seller");
+        require(!revokedBids[bidId], "bid was revoked");
+        require(entry.state == AuctionState.Live, "auction is not live");
 
         if(block.number >= entry.expiryBlock) {
             endAuction(entry, AuctionState.Expired);
@@ -288,8 +288,8 @@ contract Auction is Pausable, AuctionEvents{
         }
 
         BidInfo memory bid = bidRegistry[bidId];
-        require(bid.value != 0);
-        require(block.number < bid.expiryBlock);
+        require(bid.value != 0, "bid value cannot be zero");
+        require(block.number < bid.expiryBlock, "bid expired");
 
         concludeAuction(entry, bid.buyer, bid.proxy, bid.token, bid.value);
     }
@@ -299,10 +299,10 @@ contract Auction is Pausable, AuctionEvents{
         external
     {
         AuctionInfo memory entry = auctions[auctionId];
-        require(tub.lad(entry.cdp) == address(this));
+        require(tub.lad(entry.cdp) == address(this), "cdp not owned by auction");
         require(entry.state == AuctionState.Waiting ||
-                entry.state == AuctionState.Expired);
-        require(msg.sender == entry.seller);
+                entry.state == AuctionState.Expired, "cannot cancel live auction");
+        require(msg.sender == entry.seller, "caller must be seller");
 
         AuctionState state = (block.number >= entry.expiryBlock)
                                 ? AuctionState.Expired
@@ -323,11 +323,12 @@ contract Auction is Pausable, AuctionEvents{
         returns (bytes32)
     {
         AuctionInfo memory entry = auctions[auctionId];
-        require(tub.lad(entry.cdp) == address(this));
-        require(DSProxy(proxy).owner() == msg.sender);
+        require(tub.lad(entry.cdp) == address(this), "cdp not owned by auction");
+        require(DSProxy(proxy).owner() == msg.sender, "proxy-bidder mismatch");
         require(
             entry.state == AuctionState.Live ||
-            entry.state == AuctionState.Waiting
+            entry.state == AuctionState.Waiting, 
+            "auction must be live"
         );
         
         if(block.number >= entry.expiryBlock) {
@@ -347,7 +348,7 @@ contract Auction is Pausable, AuctionEvents{
             salt
         );
 
-        require(bidRegistry[bidId].bidId == bytes32(0));
+        require(bidRegistry[bidId].bidId == bytes32(0), "bidId already used");
 
         BidInfo memory bid = BidInfo(
             entry.cdp,
@@ -389,8 +390,8 @@ contract Auction is Pausable, AuctionEvents{
         external
     {
         BidInfo memory bid = bidRegistry[bidId];
-        require(msg.sender == bid.buyer);
-        require(!revokedBids[bidId]);
+        require(msg.sender == bid.buyer, "caller must be buyer");
+        require(!revokedBids[bidId], "bid already revoked");
         revokedBids[bidId] = true;
         delete bidRegistry[bidId];
         IERC20(bid.token).transfer(msg.sender, bid.value);
@@ -461,7 +462,7 @@ contract Auction is Pausable, AuctionEvents{
         bytes32 cdp, address to
     ) internal
     {
-        require(DSProxy(to).owner() == msg.sender);
+        require(DSProxy(to).owner() == msg.sender, "sender-proxy mismatch");
         tub.give(cdp, to);
 
         emit LogCDPTransfer(
