@@ -29,12 +29,12 @@ contract AuctionRegistry {
 
     struct BidInfo {
         bytes32 cdp;
+        bytes32 auctionId;
         address buyer;
         address proxy;
         uint256 value;
         address token;
         bytes32 bidId;
-        bool    revoked;
         uint256 expiryBlock;
     }
 
@@ -133,6 +133,7 @@ contract AuctionRegistry {
         view
         returns (
             bytes32 cdp,
+            bytes32 auctionId,
             address buyer,
             address proxy,
             uint256 value,
@@ -141,13 +142,13 @@ contract AuctionRegistry {
             uint256 expiry
         )
     {
-        cdp     = bidRegistry[bidId].cdp;
-        buyer   = bidRegistry[bidId].buyer;
-        proxy   = bidRegistry[bidId].proxy;
-        value   = bidRegistry[bidId].value;
-        token   = bidRegistry[bidId].token;
-        revoked = bidRegistry[bidId].revoked; 
-        expiry  = bidRegistry[bidId].expiryBlock;
+        cdp       = bidRegistry[bidId].cdp;
+        auctionId = bidRegistry[bidId].auctionId;
+        buyer     = bidRegistry[bidId].buyer;
+        proxy     = bidRegistry[bidId].proxy;
+        value     = bidRegistry[bidId].value;
+        token     = bidRegistry[bidId].token;
+        expiry    = bidRegistry[bidId].expiryBlock;
     }
 }
 
@@ -179,8 +180,9 @@ contract AuctionEvents is AuctionRegistry{
 
     event LogSubmittedBid(
         bytes32 cdp,
+        bytes32 indexed auctionId,
         address indexed buyer,
-        address indexed proxy,
+        address proxy,
         uint256 value,
         address token,
         bytes32 indexed bidId,
@@ -352,12 +354,12 @@ contract Auction is Pausable, AuctionEvents{
 
         BidInfo memory bid = BidInfo(
             entry.cdp,
+            auctionId,
             msg.sender,
             proxy,
             value,
             token,
             bidId,
-            false,
             expiry
         );
 
@@ -375,6 +377,7 @@ contract Auction is Pausable, AuctionEvents{
 
         emit LogSubmittedBid(
             entry.cdp,
+            auctionId,
             msg.sender,
             proxy,
             value,

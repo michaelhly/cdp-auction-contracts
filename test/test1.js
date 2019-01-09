@@ -162,6 +162,7 @@ contract("test1", accounts => {
     assert.equal(auctionBalance.toString(), bid.toString());
 
     const LogSubmittedBid = submitBid.logs[0].args;
+    assert.equal(LogSubmittedBid.auctionId, auctionId);
     assert.equal(LogSubmittedBid.buyer, accounts[1]);
     assert.equal(LogSubmittedBid.value.toString(), bid.toString());
     assert.equal(LogSubmittedBid.token, token.address);
