@@ -36,6 +36,8 @@ contract AuctionRegistry {
         address token;
         bytes32 bidId;
         uint256 expiryBlock;
+        bool    won;
+        bool    revoked;
     }
 
     uint256 public totalListings = 0;
@@ -53,8 +55,6 @@ contract AuctionRegistry {
     mapping (bytes32 => bytes32[]) internal auctionToBids;
     // Mapping of users to bidIds
     mapping (address => bytes32[]) internal userToBids;
-    // Mapping of revoked bids
-    mapping (bytes32 => bool) public revokedBids;
 
     function getAuctionsByUser(address auctioneer)
         public
@@ -138,8 +138,9 @@ contract AuctionRegistry {
             address proxy,
             uint256 value,
             address token,
+            uint256 expiry,
             bool    revoked,
-            uint256 expiry
+            bool    won
         )
     {
         cdp       = bidRegistry[bidId].cdp;
@@ -149,6 +150,8 @@ contract AuctionRegistry {
         value     = bidRegistry[bidId].value;
         token     = bidRegistry[bidId].token;
         expiry    = bidRegistry[bidId].expiryBlock;
+        revoked   = bidRegistry[bidId].revoked;
+        won       = bidRegistry[bidId].won;
     }
 }
 
@@ -172,9 +175,10 @@ contract AuctionEvents is AuctionRegistry{
 
     event LogConclusion(
         bytes32 cdp,
-        address indexed seller,
-        address indexed buyer,
+        address seller,
+        address buyer,
         bytes32 indexed auctionId,
+        bytes32 indexed bidId,
         uint256 value
     );
 
@@ -281,7 +285,6 @@ contract Auction is Pausable, AuctionEvents{
         AuctionInfo memory entry = auctions[auctionId];
         require(tub.lad(entry.cdp) == address(this), "cdp not owned by auction");
         require(entry.seller == msg.sender, "caller must be seller");
-        require(!revokedBids[bidId], "bid was revoked");
         require(entry.state == AuctionState.Live, "auction is not live");
 
         if(block.number >= entry.expiryBlock) {
@@ -290,10 +293,13 @@ contract Auction is Pausable, AuctionEvents{
         }
 
         BidInfo memory bid = bidRegistry[bidId];
+        require(!bid.revoked, "bid was revoked");
         require(bid.value != 0, "bid value cannot be zero");
         require(block.number < bid.expiryBlock, "bid expired");
+        bid.won = true;
+        bidRegistry[bidId] = bid;
 
-        concludeAuction(entry, bid.buyer, bid.proxy, bid.token, bid.value);
+        concludeAuction(entry, bidId, bid.buyer, bid.proxy, bid.token, bid.value);
     }
 
     /* Remove a CDP from auction */
@@ -360,20 +366,23 @@ contract Auction is Pausable, AuctionEvents{
             value,
             token,
             bidId,
-            expiry
+            expiry,
+            false,
+            false
         );
-
-        bidRegistry[bidId] = bid;
-        userToBids[msg.sender].push(bidId);
-        auctionToBids[auctionId].push(bidId);
 
         if(value >= entry.ask && token == entry.token) {
             // Allow auction to conclude if bid >= ask
-            concludeAuction(entry, msg.sender, proxy, entry.token, value);
+            bid.won = true;
+            concludeAuction(entry, bidId, msg.sender, proxy, entry.token, value);
         } else {
             // Auction tokens held in escrow until bid expires
             IERC20(token).transferFrom(msg.sender, this, value);
         }
+
+        bidRegistry[bidId] = bid;
+        userToBids[msg.sender].push(bidId);
+        auctionToBids[auctionId].push(bidId);
 
         emit LogSubmittedBid(
             entry.cdp,
@@ -394,9 +403,9 @@ contract Auction is Pausable, AuctionEvents{
     {
         BidInfo memory bid = bidRegistry[bidId];
         require(msg.sender == bid.buyer, "caller must be buyer");
-        require(!revokedBids[bidId], "bid already revoked");
-        revokedBids[bidId] = true;
-        delete bidRegistry[bidId];
+        require(!bid.revoked, "bid already revoked");
+        bid.revoked = true;
+        bidRegistry[bidId] = bid;
         IERC20(bid.token).transfer(msg.sender, bid.value);
 
         emit LogRevokedBid(
@@ -409,6 +418,7 @@ contract Auction is Pausable, AuctionEvents{
 
     function concludeAuction(
         AuctionInfo entry,
+        bytes32 bidId,
         address winner, 
         address proxy, 
         address token,
@@ -432,6 +442,7 @@ contract Auction is Pausable, AuctionEvents{
             winner,
             entry.seller,
             entry.auctionId,
+            bidId,
             value
         );
     }

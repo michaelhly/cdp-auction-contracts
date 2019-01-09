@@ -29,6 +29,7 @@ contract("test1", accounts => {
   let saiProxy = null;
   let token = null;
   let auctionId = null;
+  let bidId = null;
   let ask = web3.utils.toWei(new BN(random(10)));
 
   before(async () => {
@@ -137,7 +138,7 @@ contract("test1", accounts => {
     assert.equal(auctionEntry[0].args.expiry.toString(), expiry.toString());
   });
 
-  it("Test: submitBid, bid entry", async () => {
+  it("Test: submitBid, submit bid entry", async () => {
     const build_tx = await proxyFactory.build({ from: accounts[1] });
     const acc1Proxy = await DSProxy.at(build_tx.logs[0].args.proxy);
     assert.equal(await acc1Proxy.owner(), accounts[1]);
@@ -161,11 +162,22 @@ contract("test1", accounts => {
     const auctionBalance = await token.balanceOf(auction.address);
     assert.equal(auctionBalance.toString(), bid.toString());
 
-    const LogSubmittedBid = submitBid.logs[0].args;
-    assert.equal(LogSubmittedBid.auctionId, auctionId);
-    assert.equal(LogSubmittedBid.buyer, accounts[1]);
-    assert.equal(LogSubmittedBid.value.toString(), bid.toString());
-    assert.equal(LogSubmittedBid.token, token.address);
-    assert.equal(LogSubmittedBid.expiryBlock.toString(), expiry.toString());
+    const submitLog = submitBid.logs[0].args;
+    assert.equal(submitLog.auctionId, auctionId);
+    assert.equal(submitLog.buyer, accounts[1]);
+    assert.equal(submitLog.value.toString(), bid.toString());
+    assert.equal(submitLog.token, token.address);
+    assert.equal(submitLog.expiryBlock.toString(), expiry.toString());
+
+    bidId = submitLog.bidId;
+  });
+
+  it("Test: revokeBid, revoke bid entry", async () => {
+    await auction.revokeBid(bidId, { from: accounts[1] });
+    const balance = await token.balanceOf(accounts[1]);
+    assert.equal(balance.toString(), ask.toString());
+
+    const bidInfo = await auction.getBidInfo(bidId);
+    assert.equal(bidInfo[7], true);
   });
 });
