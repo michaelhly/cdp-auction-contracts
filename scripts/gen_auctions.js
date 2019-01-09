@@ -1,7 +1,7 @@
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const provider = new HDWalletProvider(
   process.env.MNEMONIC,
-  `https://kovan.infura.io/v3/${process.env.API_KEY}`
+  `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`
 );
 const Web3 = require("web3");
 const web3 = new Web3(provider);

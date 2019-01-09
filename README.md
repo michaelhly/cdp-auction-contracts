@@ -3,10 +3,10 @@ Network: Kovan
 ```
 Running migration: 2_deploy_auction.js
   Deploying AuctionProxy...
-  ... 0xe6a66e2cad1bdff223b4b22399f14a17c6eaafc5ddea52be11855cf74e1db836
-  AuctionProxy: 0x8a4fc6ecbadaa634a4ce1dc58db5ba3a84da067a
+  ... 0xc9d2f9e81b9bf6e5b457d226b37c98f6b3a1affaea6c0f8accd78764839f7d3b
+  AuctionProxy: 0x1551dec1aef2b8ad2bc160f9659d94ee418279d0
   Deploying Auction...
-  ... 0xcb17577c167292397b9e827c0935cc27071b586549a7e07ec79ce146714a2897
-  Auction: 0x49287caeb6e033755a4f2de0d410130ccfb3ca85
+  ... 0x46f73ca350cd5a0ffdea7c82ab5a127f8241a77def22653360c1b780058aea2c
+  Auction: 0xf841662d61cb8247e3cbb12e2337547bbdf1b7bb
 Saving artifacts...
 ```
