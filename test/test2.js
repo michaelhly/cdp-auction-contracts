@@ -17,19 +17,16 @@ const { promisify } = require("es6-promisify");
 
 const random = max => Math.floor((Math.random() + 1) * max);
 
-//Fake ERC20 token
-const tokens = ["0xb06d72a24df50d4e2cac133b320c5e7de3ef94cb"];
-
-contract("test1", accounts => {
+contract("test2", accounts => {
   let proxyFactory = null;
   let saiTub = null;
   let auction = null;
   let auctionProxy = null;
   let myProxy = null;
   let saiProxy = null;
+  let cup = null;
   let token = null;
   let auctionId = null;
-  let bidId = null;
   let ask = web3.utils.toWei(new BN(random(10)));
 
   before(async () => {
@@ -60,9 +57,9 @@ contract("test1", accounts => {
     );
 
     const openCdp = await myProxy.execute(saiProxy.address, calldata_open);
-    const cdpCup = openCdp.receipt.logs[2].data;
+    cup = openCdp.receipt.logs[2].data;
 
-    assert(await saiTub.lad(cdpCup), myProxy.address);
+    assert(await saiTub.lad(cup), myProxy.address);
 
     const expiry = new BN(random(500)).add(new BN(openCdp.receipt.blockNumber));
     const salt = new BN(random(100000));
@@ -105,8 +102,8 @@ contract("test1", accounts => {
       [
         auction.address,
         saiTub.address,
-        cdpCup,
-        tokens[0],
+        cup,
+        token.address,
         ask.toString(),
         expiry.toString(),
         salt.toString()
@@ -129,23 +126,24 @@ contract("test1", accounts => {
         .get(cb)
     )();
 
-    assert.equal(await saiTub.lad(cdpCup), auction.address);
-    assert.equal(auctionEntry[0].args.cdp, cdpCup);
+    assert.equal(await saiTub.lad(cup), auction.address);
+    assert.equal(auctionEntry[0].args.cdp, cup);
     assert.equal(auctionEntry[0].args.seller, await myProxy.owner());
     assert.equal(auctionEntry[0].args.proxy, myProxy.address);
-    assert.equal(auctionEntry[0].args.token, tokens[0]);
+    assert.equal(auctionEntry[0].args.token, token.address);
     assert.equal(auctionEntry[0].args.ask.toString(), ask.toString());
     assert.equal(auctionEntry[0].args.expiry.toString(), expiry.toString());
   });
 
-  it("Test: submitBid, submit bid entry", async () => {
+  it("Test: submitBid, take CDP", async () => {
+    const acc0InitialBalance = await token.balanceOf(accounts[0]);
     const build_tx = await proxyFactory.build({ from: accounts[1] });
-    const acc1Proxy = await DSProxy.at(build_tx.logs[0].args.proxy);
+    const acc1ProxyAddr = build_tx.logs[0].args.proxy;
+    const acc1Proxy = await DSProxy.at(acc1ProxyAddr);
     assert.equal(await acc1Proxy.owner(), accounts[1]);
     await token.transfer(accounts[1], ask.toString());
     await token.approve(auction.address, ask.toString(), { from: accounts[1] });
 
-    const bid = new BN(ask).sub(new BN(10000));
     const expiry = new BN(random(500000));
     const salt = new BN(random(100000));
 
@@ -153,34 +151,25 @@ contract("test1", accounts => {
       auctionId,
       acc1Proxy.address,
       token.address,
-      bid.toString(),
+      ask.toString(),
       expiry.toString(),
       salt.toString(),
       { from: accounts[1] }
     );
 
-    const auctionBalance = await token.balanceOf(auction.address);
-    assert.equal(auctionBalance.toString(), bid.toString());
+    const submitLog = submitBid.logs;
+
+    assert.equal(await saiTub.lad(cup), acc1ProxyAddr);
+
+    const acc0FinalBalance = await token.balanceOf(accounts[0]);
+    assert.equal(
+      acc0FinalBalance.toString() - acc0InitialBalance.toString(),
+      0
+    );
 
     const auctionInfo = await auction.getAuctionInfo(auctionId);
-    assert.equal(auctionInfo[7].toNumber(), 1);
-
-    const submitLog = submitBid.logs[0].args;
-    assert.equal(submitLog.auctionId, auctionId);
-    assert.equal(submitLog.buyer, accounts[1]);
-    assert.equal(submitLog.value.toString(), bid.toString());
-    assert.equal(submitLog.token, token.address);
-    assert.equal(submitLog.expiryBlock.toString(), expiry.toString());
-
-    bidId = submitLog.bidId;
-  });
-
-  it("Test: revokeBid, revoke bid entry", async () => {
-    await auction.revokeBid(bidId, { from: accounts[1] });
-    const balance = await token.balanceOf(accounts[1]);
-    assert.equal(balance.toString(), ask.toString());
-
-    const bidInfo = await auction.getBidInfo(bidId);
-    assert.equal(bidInfo[7], true);
+    assert.equal(auctionInfo[7], 3);
+    const bidInfo = await auction.getBidInfo(submitLog[2].args.bidId);
+    assert.equal(bidInfo[8], true);
   });
 });

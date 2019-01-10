@@ -371,13 +371,13 @@ contract Auction is Pausable, AuctionEvents{
             false
         );
 
+        // Auction tokens held in escrow until bid expires
+        IERC20(token).transferFrom(msg.sender, this, value);
+
         if(value >= entry.ask && token == entry.token) {
             // Allow auction to conclude if bid >= ask
             bid.won = true;
             concludeAuction(entry, bidId, msg.sender, proxy, entry.token, value);
-        } else {
-            // Auction tokens held in escrow until bid expires
-            IERC20(token).transferFrom(msg.sender, this, value);
         }
 
         bidRegistry[bidId] = bid;
