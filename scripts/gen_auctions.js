@@ -126,7 +126,7 @@ const main = async () => {
     var cup = event_NewCup[0].returnValues.cup;
 
     var ask = web3.utils.toWei(new BN(random(10) + 1));
-    var expiry = new BN(random(500)).add(new BN(openCdp.blockNumber));
+    var expiry = new BN(random(100000)).add(new BN(openCdp.blockNumber));
     var salt = new BN(random(100000));
 
     var callData = genCallDataForAuction(
