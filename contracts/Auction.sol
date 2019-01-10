@@ -432,7 +432,8 @@ contract Auction is Pausable, AuctionEvents{
 
         transferCDP(
             entry.cdp, 
-            proxy
+            proxy,
+            winner
         );
 
         updateAuction(entry, AuctionState.Ended);
@@ -453,7 +454,8 @@ contract Auction is Pausable, AuctionEvents{
         updateAuction(entry, state);
         transferCDP(
             entry.cdp,
-            entry.proxy
+            entry.proxy,
+            entry.seller
         );
 
         emit LogEndedAuction(
@@ -473,16 +475,18 @@ contract Auction is Pausable, AuctionEvents{
     }
 
     function transferCDP(
-        bytes32 cdp, address to
+        bytes32 cdp, 
+        address proxy, 
+        address proxyOwner
     ) internal
     {
-        require(DSProxy(to).owner() == msg.sender, "sender-proxy mismatch");
-        tub.give(cdp, to);
+        require(DSProxy(proxy).owner() == proxyOwner, "sender-proxy mismatch");
+        tub.give(cdp, proxy);
 
         emit LogCDPTransfer(
             cdp,
             address(this),
-            to
+            proxy
         );
     }
 
