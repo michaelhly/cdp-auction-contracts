@@ -201,9 +201,8 @@ contract AuctionEvents is AuctionRegistry{
     );
 
     event LogCDPTransfer(
-        bytes32 cdp, 
-        address from,
-        address to
+        bytes32 indexed cdp,
+        address indexed to
     );
 }
 
@@ -485,7 +484,6 @@ contract Auction is Pausable, AuctionEvents{
 
         emit LogCDPTransfer(
             cdp,
-            address(this),
             proxy
         );
     }
